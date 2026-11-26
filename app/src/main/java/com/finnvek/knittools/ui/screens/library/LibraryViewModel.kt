@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.library
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.analytics.UsageAnalytics
@@ -41,6 +42,25 @@ internal data class SavedPatternDetail(
     val isLocalPdfAvailable: Boolean,
 )
 
+internal class LibraryErrorState(
+    private val savedStateHandle: SavedStateHandle,
+    key: String,
+) {
+    private val currentId = savedStateHandle.getMutableStateFlow(key, 0L)
+    private val handledKey = "$key.handled"
+    val id = currentId.asStateFlow()
+
+    fun report() {
+        currentId.value += 1
+    }
+
+    fun claim(id: Long): Boolean {
+        if (id <= (savedStateHandle.get<Long>(handledKey) ?: 0L)) return false
+        savedStateHandle[handledKey] = id
+        return true
+    }
+}
+
 @HiltViewModel
 class LibraryViewModel
     @Inject
@@ -50,13 +70,14 @@ class LibraryViewModel
         private val progressPhotoRepository: ProgressPhotoRepository,
         private val proManager: ProManager,
         counterRepository: CounterRepository,
+        savedStateHandle: SavedStateHandle,
         private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         val proState = proManager.proState
         val proAccessReady get() = proManager.initialStateReady
         private val _isSavingYarnCard = MutableStateFlow(false)
         val isSavingYarnCard = _isSavingYarnCard.asStateFlow()
-        private val _yarnSaveSuccessId = MutableStateFlow(0L)
+        private val _yarnSaveSuccessId = savedStateHandle.getMutableStateFlow("yarnSaveSuccessId", 0L)
         val yarnSaveSuccessId = _yarnSaveSuccessId.asStateFlow()
         private var pendingManualYarnCard: ManualYarnCardInput? = null
         private val _isPhotoSelectMode = MutableStateFlow(false)
@@ -64,8 +85,7 @@ class LibraryViewModel
 
         private val _selectedPhotoIds = MutableStateFlow<Set<Long>>(emptySet())
         val selectedPhotoIds: StateFlow<Set<Long>> = _selectedPhotoIds.asStateFlow()
-        private val _photoDeleteErrorId = MutableStateFlow(0L)
-        val photoDeleteErrorId: StateFlow<Long> = _photoDeleteErrorId.asStateFlow()
+        internal val photoDeleteError = LibraryErrorState(savedStateHandle, "photoDeleteErrorId")
 
         private val _isPatternSelectMode = MutableStateFlow(false)
         val isPatternSelectMode: StateFlow<Boolean> = _isPatternSelectMode.asStateFlow()
@@ -80,10 +100,8 @@ class LibraryViewModel
 
         private val _selectedYarnIds = MutableStateFlow<Set<Long>>(emptySet())
         val selectedYarnIds: StateFlow<Set<Long>> = _selectedYarnIds.asStateFlow()
-        private val _yarnDeleteErrorId = MutableStateFlow(0L)
-        val yarnDeleteErrorId: StateFlow<Long> = _yarnDeleteErrorId.asStateFlow()
-        private val _yarnSaveErrorId = MutableStateFlow(0L)
-        val yarnSaveErrorId: StateFlow<Long> = _yarnSaveErrorId.asStateFlow()
+        internal val yarnDeleteError = LibraryErrorState(savedStateHandle, "yarnDeleteErrorId")
+        internal val yarnSaveError = LibraryErrorState(savedStateHandle, "yarnSaveErrorId")
 
         // Countit Library-hubille
         val savedPatternCount: Flow<Int> = savedPatternRepository.getCount()
@@ -144,7 +162,7 @@ class LibraryViewModel
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
-                    _photoDeleteErrorId.value += 1
+                    photoDeleteError.report()
                 }
             }
         }
@@ -174,7 +192,7 @@ class LibraryViewModel
                 selectedIds = _selectedPhotoIds,
                 exitSelectMode = ::exitPhotoSelectMode,
                 deleteByIds = progressPhotoRepository::deletePhotos,
-                onError = { _photoDeleteErrorId.value += 1 },
+                onError = photoDeleteError::report,
             )
         }
 
@@ -281,9 +299,9 @@ class LibraryViewModel
                 selectedIds = _selectedYarnIds,
                 exitSelectMode = ::exitYarnSelectMode,
                 deleteByIds = { ids ->
-                    if (!yarnCardRepository.deleteCards(ids)) _yarnDeleteErrorId.value += 1
+                    if (!yarnCardRepository.deleteCards(ids)) yarnDeleteError.report()
                 },
-                onError = { _yarnDeleteErrorId.value += 1 },
+                onError = yarnDeleteError::report,
             )
         }
 
@@ -325,7 +343,7 @@ class LibraryViewModel
                             ),
                         )
                     if (savedId == null) {
-                        _yarnSaveErrorId.value += 1
+                        yarnSaveError.report()
                     } else {
                         pendingManualYarnCard = null
                         analytics.track(UsageEvent.YARN_CARD_CREATED)
@@ -334,7 +352,7 @@ class LibraryViewModel
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
-                    _yarnSaveErrorId.value += 1
+                    yarnSaveError.report()
                 } finally {
                     _isSavingYarnCard.value = false
                 }

@@ -324,11 +324,7 @@ class NotesEditorViewModel
             interrupted.job.join()
             if (interruptedWrite !== interrupted) return true
             val storedNotes =
-                try {
-                    readStoredNotes(loadedProjectId)
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
+                readStoredNotes(loadedProjectId).getOrElse {
                     _uiState.update { it.copy(saveFailed = true) }
                     return false
                 }
@@ -353,13 +349,21 @@ class NotesEditorViewModel
             return true
         }
 
-        private suspend fun readStoredNotes(loadedProjectId: Long): String? {
-            val observationVersion = notesObservationVersion
-            val project = repository.getProject(loadedProjectId)
-            currentCoroutineContext().ensureActive()
-            project ?: return null
-            return if (observationVersion == notesObservationVersion) project.notes else latestStoredNotes
-        }
+        private suspend fun readStoredNotes(loadedProjectId: Long): Result<String?> =
+            try {
+                var observationVersion: Long
+                var stored: String?
+                do {
+                    observationVersion = notesObservationVersion
+                    stored = repository.getProject(loadedProjectId)?.notes
+                    currentCoroutineContext().ensureActive()
+                } while (stored != null && observationVersion != notesObservationVersion && stored != latestStoredNotes)
+                Result.success(stored)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (expectedReadFailure: Exception) {
+                Result.failure(expectedReadFailure)
+            }
 
         fun discardChanges() {
             saveJob?.cancel()
@@ -442,6 +446,17 @@ class NotesEditorViewModel
             val baseBeforeClear = persistedNotes
             val interrupted = interruptedWrite
             val fileId = draftFileId()
+
+            suspend fun retainDraftFile(
+                notes: String,
+                base: String,
+            ) {
+                if (fileId == null || fitsSavedState(notes, base)) return
+                draftFileMutex.withLock {
+                    draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, base))
+                }
+            }
+
             @Suppress("TooGenericExceptionCaught")
             applicationScope.launch {
                 try {
@@ -450,19 +465,18 @@ class NotesEditorViewModel
                             baseBeforeClear to draftBeforeClear
                         } else {
                             interrupted.job.join()
-                            val storedNotes = readStoredNotes(loadedProjectId) ?: return@launch
+                            val storedNotes =
+                                readStoredNotes(loadedProjectId).getOrElse {
+                                    retainDraftFile(draftBeforeClear, baseBeforeClear)
+                                    return@launch
+                                } ?: return@launch
                             interrupted.reconcile(baseBeforeClear, draftBeforeClear, storedNotes, latestStoredNotes)
                         }
                     if (notesToSave == baseNotes) {
                         clearDraftFile()
                         return@launch
                     }
-                    val pendingFileId = fileId.takeUnless { fitsSavedState(notesToSave, baseNotes) }
-                    if (pendingFileId != null) {
-                        draftFileMutex.withLock {
-                            draftStorage.write(loadedProjectId, pendingFileId, NotesDraft(notesToSave, baseNotes))
-                        }
-                    }
+                    retainDraftFile(notesToSave, baseNotes)
                     val result =
                         repository.saveProjectNotes(
                             id = loadedProjectId,
@@ -498,9 +512,10 @@ class NotesEditorViewModel
                 observed: String,
             ): Pair<String, String> {
                 val merge = write.cancelledMerge
-                if (merge != null && (stored == merge.mergedNotes || observed == merge.mergedNotes)) {
-                    // Replay the latest edit against the same independent text the transaction read.
-                    return merge.mergedNotes to mergeProjectNotes(base, requested, merge.previousNotes)
+                if (merge != null) {
+                    val current = if (stored == merge.mergedNotes) merge.previousNotes else stored
+                    val editBase = if (stored == submittedNotes) submittedNotes else base
+                    return stored to mergeProjectNotes(editBase, requested, current)
                 }
                 val previousWriteVisible = stored == submittedNotes || observed == submittedNotes
                 return (if (previousWriteVisible) submittedNotes else base) to requested

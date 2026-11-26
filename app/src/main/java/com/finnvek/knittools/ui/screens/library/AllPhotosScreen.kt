@@ -28,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -76,6 +75,7 @@ data class AllPhotosActions(
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
     val onBack: () -> Unit,
+    val claimDeleteError: (Long) -> Boolean,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,7 +88,6 @@ fun AllPhotosScreen(
     var selectedProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
-    var lastHandledDeleteErrorId by remember { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val gridState = rememberLazyGridState()
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
@@ -115,8 +114,7 @@ fun AllPhotosScreen(
     }
 
     LaunchedEffect(state.deleteErrorId) {
-        if (state.deleteErrorId > lastHandledDeleteErrorId) {
-            lastHandledDeleteErrorId = state.deleteErrorId
+        if (actions.claimDeleteError(state.deleteErrorId)) {
             snackbarHostState.showSnackbar(deleteFailedMessage)
         }
     }

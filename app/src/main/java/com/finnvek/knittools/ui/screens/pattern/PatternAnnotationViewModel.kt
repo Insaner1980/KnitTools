@@ -929,7 +929,7 @@ class PatternAnnotationViewModel
                     runCatching {
                         val annotations = loadExportAnnotations(request.layerIds)
                         coroutineContext.ensureActive()
-                        if (!isCurrentExport(request)) return@launch
+                        if (!isCurrentExport(request)) throw CancellationException("PDF export context changed")
                         val trackerHighlights = resolveExportTrackerHighlights(annotations, counterContext.value)
                         handedToExporter = true
                         exporter.export(

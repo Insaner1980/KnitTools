@@ -32,7 +32,8 @@ class RavelryBrowserSourceTest {
         assertTrue(browser.contains("return navigation != RavelryNavigation.InApp"))
         assertTrue(browser.contains("openExternalWebLink(context, url)"))
         // Lomakkeella lähetetty kassa avaa selaimessa sivun, jolta ostoa yritettiin, ei pelkkää POST-osoitetta.
-        assertTrue(browser.contains("openOutside(browserState.fallbackUrl, purchaseMessage)"))
+        val interceptor = browser.substringAfter("private fun interceptRavelryRequest(", "").substringBefore("\n}")
+        assertTrue(interceptor.contains("openOutside(browserState.fallbackUrl, purchaseMessage)"))
         assertTrue(navGraph.contains("Screen.RavelryBrowser.ROUTE,"))
         assertTrue(navGraph.contains("startUrl = backStackEntry.arguments?.getString(Screen.RavelryBrowser.ARG_URL)"))
         assertTrue(mainActivity.contains("onWebPdfDownload = incomingPdfViewModel::receiveDownload"))

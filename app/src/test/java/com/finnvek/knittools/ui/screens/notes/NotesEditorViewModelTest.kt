@@ -8,6 +8,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.repository.CancelledNotesMerge
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import com.finnvek.knittools.repository.mergeProjectNotes
@@ -21,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
@@ -39,6 +41,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -293,6 +296,47 @@ class NotesEditorViewModelTest : NotesEditorTestFixture() {
         }
 
     @Test
+    fun `replaying an interrupted merge does not restore text deleted after the commit`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+            val projects = MutableStateFlow(project)
+            every { repository.observeProject(1L) } returns projects
+            val merged = "Base independent red"
+            coEvery { repository.saveProjectNotes(1L, "Base", "Base red", false) } coAnswers {
+                try {
+                    awaitCancellation()
+                } catch (cancelled: CancellationException) {
+                    throw CancelledNotesMerge("Base independent", merged, cancelled)
+                }
+            }
+            val finishRead = CompletableDeferred<Unit>()
+            coEvery { repository.getProject(1L) } coAnswers {
+                finishRead.await()
+                project
+            }
+            coEvery { repository.saveProjectNotes(1L, "Base", "Base blue", false) } returns
+                ProjectNotesSaveResult.Saved(project.copy(notes = "Base blue"))
+            val viewModel = createEditor()
+            runCurrent()
+            viewModel.onNotesChanged("Base red")
+            viewModel.saveImmediately()
+            runCurrent()
+            viewModel.onNotesChanged("Base blue")
+            viewModel.saveImmediately(exitAfterSave = true)
+            runCurrent()
+
+            // The observer is still delivering the earlier merge; the database already holds the deletion.
+            projects.value = project.copy(notes = merged)
+            runCurrent()
+            finishRead.complete(Unit)
+            advanceUntilIdle()
+
+            assertTrue(viewModel.consumeExitRequest())
+            assertEquals("Base blue", viewModel.uiState.value.notes)
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Base blue", false) }
+        }
+
+    @Test
     fun `missing project after interrupted autosave prevents another write`() =
         runTest {
             observeProjectWithBaseNotes()
@@ -492,6 +536,48 @@ class NotesEditorViewModelTest : NotesEditorTestFixture() {
 
             assertEquals(NotesDraft(notes, "Base"), files[fileId])
             coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", notes, false) }
+        }
+
+    @Test
+    fun `a failed shutdown reconciliation read leaves the last long edit recoverable`() =
+        runTest {
+            val project = observeProjectWithBaseNotes()
+            val handle = SavedStateHandle(mapOf("projectId" to 1L))
+            val storage = mockk<NotesDraftStorage>(relaxUnitFun = true)
+            val files = mutableMapOf<UUID, NotesDraft>()
+            coEvery { storage.write(1L, any(), any()) } answers {
+                files[secondArg<UUID>()] = thirdArg<NotesDraft>()
+                true
+            }
+            coEvery { storage.read(1L, any()) } answers { files[secondArg<UUID>()] }
+            coEvery { repository.saveProjectNotes(1L, "Base", "First edit", false) } coAnswers { awaitCancellation() }
+            coEvery { repository.getProject(1L) } throws IOException("Read failed")
+            val viewModel = createEditor(handle, storage)
+            val store = androidx.lifecycle.ViewModelStore()
+            store.put("editor", viewModel)
+            runCurrent()
+            viewModel.onNotesChanged("First edit")
+            viewModel.saveImmediately()
+            runCurrent()
+
+            val notes = "Base" + " long edit".repeat(2_000)
+            viewModel.onNotesChanged(notes)
+            store.clear()
+            advanceUntilIdle()
+
+            val fileId = UUID.fromString(requireNotNull(handle.get<String>("notesDraftFileId")))
+            assertEquals(NotesDraft(notes, "Base"), files[fileId])
+            coVerify(exactly = 1) { repository.getProject(1L) }
+            val external = "Base external"
+            every { repository.observeProject(1L) } returns flowOf(project.copy(notes = external))
+            coEvery { repository.saveProjectNotes(1L, "Base", notes, false) } answers {
+                ProjectNotesSaveResult.Saved(project.copy(notes = mergeProjectNotes(arg(1), arg(2), external)))
+            }
+            val restored = createEditor(handle, storage)
+            runCurrent()
+            assertEquals(notes, restored.uiState.value.notes)
+            advanceUntilIdle()
+            assertEquals(external + notes.removePrefix("Base"), restored.uiState.value.notes)
         }
 
     @Test

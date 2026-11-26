@@ -16,10 +16,11 @@ class YarnCardFlowSourceTest {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
 
-        assertTrue(navGraph.contains("val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId"))
+        assertTrue(navGraph.contains("val yarnDeleteErrorId by libraryViewModel.yarnDeleteError.id"))
         assertTrue(navGraph.contains("deleteErrorId = yarnDeleteErrorId"))
         assertTrue(screen.contains("LaunchedEffect(state.deleteErrorId)"))
-        assertTrue(screen.contains("state.deleteErrorId > lastHandledDeleteErrorId"))
+        assertTrue(navGraph.contains("claimDeleteError = libraryViewModel.yarnDeleteError::claim"))
+        assertTrue(screen.contains("actions.claimDeleteError(state.deleteErrorId)"))
         assertTrue(screen.contains("SnackbarHost(hostState = snackbarHostState)"))
     }
 

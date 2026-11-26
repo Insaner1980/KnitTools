@@ -16,7 +16,7 @@ foreach ($name in @('Join-RepoPath', 'Test-BinaryFileContainsSecret', 'Remove-Se
     if ($null -eq $node) { throw "Missing function: $name" }
     . ([scriptblock]::Create($node.Extent.Text))
 }
-function Get-KnownRavelrySecretValues { return @($secret) }
+$script:KnownRavelrySecrets = @($secret)
 function Get-RelativeFilesForRoots { param($Roots) if ($Roots -contains 'app/build/outputs/apk') { return @($script:checkedFile) } }
 function Add-Pass { param($Check, $Message) $script:result = 'PASS'; $script:message = $Message }
 function Add-Fail { param($Check, $Message, $RelativePath) $script:result = 'FAIL'; $script:message = $Message }
@@ -49,7 +49,9 @@ try {
             $script:result = $null
             $script:message = $null
             Test-KnownRavelrySecrets
-            if ($result -ne 'FAIL' -or $message.Contains($secret)) { throw "Secret detection/redaction failed: $name" }
+            if ($result -ne 'FAIL' -or $message -ne 'known Ravelry secret value found in 1 checked file(s); value redacted') {
+                throw "Secret detection/redaction failed: $name"
+            }
             Write-Output "PASS: detects synthetic secret in $name, value redacted"
             # A rename immediately after scanning verifies disposal on an early match.
             Move-Item -LiteralPath (Join-Path $fixture $name) -Destination (Join-Path $fixture "$name.checked")

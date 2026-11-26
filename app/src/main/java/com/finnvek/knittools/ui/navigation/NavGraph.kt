@@ -432,7 +432,6 @@ fun KnitToolsNavHost(
                 webPatternEditorDestination(
                     navController = navController,
                     currentShareRequest = { currentPatternShareImport },
-                    currentEntryId = { navBackStackEntry?.id },
                     openingShareRequestId = { editorOpeningShareRequestId },
                     onRequestHandled = actions.onPatternShareImportHandled,
                     destinationReady = destinationReady,
@@ -470,7 +469,6 @@ fun KnitToolsNavHost(
 private fun NavGraphBuilder.webPatternEditorDestination(
     navController: NavHostController,
     currentShareRequest: () -> PatternShareImportRequest?,
-    currentEntryId: () -> String?,
     openingShareRequestId: () -> Long?,
     onRequestHandled: (Long) -> Unit,
     destinationReady: (NavBackStackEntry, Boolean) -> Unit,
@@ -499,9 +497,11 @@ private fun NavGraphBuilder.webPatternEditorDestination(
         WebPatternEditorScreen(
             request =
                 currentShareRequest()?.takeIf {
-                    currentEntryId() == entry.id && it.payload !is PatternSharePayload.Ravelry
+                    navController.currentBackStackEntry?.id == entry.id && it.payload !is PatternSharePayload.Ravelry
                 },
-            onRequestStored = onRequestHandled,
+            onRequestStored = { requestId ->
+                if (navController.currentBackStackEntry?.id == entry.id) onRequestHandled(requestId)
+            },
             onBack = {
                 val requestId = currentShareRequest()?.requestId
                 if (requestId != null && requestId == openingShareRequestId()) {
@@ -1045,8 +1045,8 @@ private fun NavGraphBuilder.libraryMyYarnRoute(
         )
         val isYarnSelectMode by libraryViewModel.isYarnSelectMode.collectAsStateWithLifecycle()
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
-        val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId.collectAsStateWithLifecycle()
-        val yarnSaveErrorId by libraryViewModel.yarnSaveErrorId.collectAsStateWithLifecycle()
+        val yarnDeleteErrorId by libraryViewModel.yarnDeleteError.id.collectAsStateWithLifecycle()
+        val yarnSaveErrorId by libraryViewModel.yarnSaveError.id.collectAsStateWithLifecycle()
         val yarnSaveSuccessId by libraryViewModel.yarnSaveSuccessId.collectAsStateWithLifecycle()
         val isSavingYarnCard by libraryViewModel.isSavingYarnCard.collectAsStateWithLifecycle()
         val canUseYarnCards by libraryViewModel.canUseYarnCards.collectAsStateWithLifecycle()
@@ -1087,6 +1087,8 @@ private fun myYarnActions(
     },
     onCreateYarnCard = libraryViewModel::createManualYarnCard,
     onRetryCreateYarnCard = libraryViewModel::retryCreateManualYarnCard,
+    claimDeleteError = libraryViewModel.yarnDeleteError::claim,
+    claimSaveError = libraryViewModel.yarnSaveError::claim,
     onEnterSelectMode = libraryViewModel::enterYarnSelectMode,
     onToggleSelection = libraryViewModel::toggleYarnSelection,
     onSelectAll = libraryViewModel::selectAllYarn,
@@ -1202,7 +1204,7 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
         val projects by libraryViewModel.allProjects.collectAsStateWithLifecycle(initialValue = emptyList())
         val isPhotoSelectMode by libraryViewModel.isPhotoSelectMode.collectAsStateWithLifecycle()
         val selectedPhotoIds by libraryViewModel.selectedPhotoIds.collectAsStateWithLifecycle()
-        val photoDeleteErrorId by libraryViewModel.photoDeleteErrorId.collectAsStateWithLifecycle()
+        val photoDeleteErrorId by libraryViewModel.photoDeleteError.id.collectAsStateWithLifecycle()
         CompositionLocalProvider(LocalAdaptiveModalWindow provides true) {
             AllPhotosScreen(
                 state =
@@ -1217,6 +1219,7 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
                 actions =
                     AllPhotosActions(
                         onDeletePhoto = libraryViewModel::deletePhoto,
+                        claimDeleteError = libraryViewModel.photoDeleteError::claim,
                         onEnterSelectMode = libraryViewModel::enterPhotoSelectMode,
                         onToggleSelection = libraryViewModel::togglePhotoSelection,
                         onSelectAll = libraryViewModel::selectAllPhotos,

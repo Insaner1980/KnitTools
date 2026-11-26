@@ -22,13 +22,12 @@ class LifecycleFlowCollectionSourceTest {
 
     @Test
     fun `library delete failures are not replayed by a new composition`() {
-        DELETE_ERROR_CONSUMERS.forEach { path ->
+        DELETE_ERROR_CONSUMERS.forEach { (path, condition) ->
             val source = ProjectSourceFiles.read(path)
 
-            assertTrue("Käsitelty virhetunniste puuttuu tiedostosta $path", source.contains("lastHandledDeleteErrorId"))
             assertTrue(
                 "Vanha virhetunniste voidaan toistaa tiedostossa $path",
-                source.contains("deleteErrorId > lastHandledDeleteErrorId"),
+                source.contains(condition),
             )
         }
     }
@@ -46,11 +45,15 @@ class LifecycleFlowCollectionSourceTest {
                 "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt",
             )
         private val DELETE_ERROR_CONSUMERS =
-            listOf(
-                "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt",
-                "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt",
-                "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt",
-                "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt",
+            mapOf(
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt" to
+                    "actions.claimDeleteError(state.deleteErrorId)",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt" to
+                    "actions.claimDeleteError(state.deleteErrorId)",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt" to
+                    "deleteErrorId > lastHandledDeleteErrorId",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt" to
+                    "deleteErrorId > lastHandledDeleteErrorId",
             )
     }
 }

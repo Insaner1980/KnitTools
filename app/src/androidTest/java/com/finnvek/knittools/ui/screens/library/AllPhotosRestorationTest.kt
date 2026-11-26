@@ -40,7 +40,7 @@ class AllPhotosRestorationTest {
                 AllPhotosScreen(
                     state =
                         AllPhotosState(observed.orEmpty(), projects, false, emptySet(), isLoading = observed == null),
-                    actions = AllPhotosActions({}, {}, {}, {}, {}, {}, {}),
+                    actions = AllPhotosActions({}, {}, {}, {}, {}, {}, {}, { false }),
                 )
             }
         }

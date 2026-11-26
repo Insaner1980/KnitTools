@@ -46,6 +46,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -2161,9 +2162,6 @@ class PatternAnnotationWriteFeedbackTest {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternAnnotationExportOwnershipTest {
-    @get:Rule
-    val temporaryFolder = TemporaryFolder()
-
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
@@ -2609,50 +2607,6 @@ class PatternAnnotationExportOwnershipTest {
         }
 
     @Test
-    fun `failed annotation read after destination selection removes only an empty destination`() =
-        runTest { verifyDestinationAfterReadFailure(IOException("annotation read failed")) }
-
-    @Test
-    fun `cancelled annotation read after destination selection removes only an empty destination`() =
-        runTest { verifyDestinationAfterReadFailure(CancellationException("annotation read cancelled")) }
-
-    private fun TestScope.verifyDestinationAfterReadFailure(failure: Exception) {
-        val context =
-            mockk<Context> {
-                every { filesDir } returns temporaryFolder.root
-                every { contentResolver } returns mockk()
-            }
-        val exporter = spyk(PatternPdfExporter.createForTest(context, StandardTestDispatcher(testScheduler)))
-        val fixture = ExportFixture(this, exporter = exporter)
-        val source = temporaryFolder.newFile("source.pdf").apply { writeText("Original PDF") }
-        every { fixture.source.scheme } returns "file"
-        every { fixture.source.path } returns source.absolutePath
-        val existing = temporaryFolder.newFile("existing.pdf").apply { writeText("Existing PDF") }
-        val empty = temporaryFolder.newFile("new.pdf")
-        val annotations = fixture.route.annotationRepository
-
-        for (target in listOf(existing, empty)) {
-            coEvery { annotations.getForLayersForExport(any(), any(), any()) } returns emptyList()
-            val request = fixture.ready()
-            coEvery { annotations.getForLayersForExport(any(), any(), any()) } throws failure
-            fixture.deliver(request, destination = fileUri(target))
-            runCurrent()
-            assertTrue(fixture.exports.isEmpty())
-            assertEquals(failure !is CancellationException, fixture.vm.uiState.value.exportFailed)
-        }
-
-        assertEquals("Original PDF", source.readText())
-        assertEquals("Existing PDF", existing.readText())
-        assertFalse("The picker-created file remained empty after export stopped", empty.exists())
-    }
-
-    private fun fileUri(file: File): Uri =
-        mockk {
-            every { scheme } returns "file"
-            every { path } returns file.absolutePath
-        }
-
-    @Test
     fun `valid progress stays busy until export returns and late progress is suppressed`() =
         runTest {
             val fixture = ExportFixture(this)
@@ -2768,134 +2722,242 @@ class PatternAnnotationExportOwnershipTest {
             runCurrent()
             verify(exactly = 1) { fixture.analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED) }
         }
+}
 
-    private class ExportFixture(
-        val scope: TestScope,
-        library: Boolean = false,
-        libraryId: Long = 12L,
-        val exporter: PatternPdfExporter = mockk(relaxUnitFun = true),
-    ) {
-        val route = projectRoute()
-        val analytics = mockk<UsageAnalytics>(relaxed = true)
-        val source = mockk<Uri>()
-        val destination = mockk<Uri>()
-        val style = mockk<PatternAnnotationRenderStyle>()
-        var context =
-            PatternPdfExportContext(
-                source,
-                if (library) {
-                    PatternAnnotationOwner.SavedPattern(libraryId, PatternAnnotationDocumentKey.savedPattern(libraryId))
-                } else {
-                    route.projectOwner
-                },
-                if (library) null else 51L,
-            )
-        var rows = emptyList<PatternAnnotation>()
-        val requests = mutableListOf<String>()
-        val queries = mutableListOf<List<Long>>()
-        val exports = mutableListOf<ExportCall>()
-        var onPreflight: suspend () -> Unit = {}
-        var onExport: suspend ((PatternPdfExportProgress) -> Unit) -> Unit = {}
-        val vm: PatternAnnotationViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
+class PatternAnnotationExportDestinationTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
-        init {
-            every { source.toString() } returns "file:///document-51.pdf"
-            if (library) {
-                val owner = context.owner as PatternAnnotationOwner.SavedPattern
-                coEvery { route.layerRepository.getOrCreateMasterLayer(libraryId, owner.documentKey) } returns
-                    layer(31L, owner)
-            }
-            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
-            coEvery { route.annotationRepository.getForLayersForExport(any(), any(), any()) } answers {
-                val ids = firstArg<List<Long>>()
-                queries += ids
-                ids.flatMap { id -> rows.filter { it.layerId == id } }
-            }
-            coEvery { exporter.preflight(any(), any(), any()) } coAnswers {
-                onPreflight()
-                mockk()
-            }
-            coEvery { exporter.export(any(), any(), any(), any(), any(), any()) } coAnswers {
-                exports += ExportCall(firstArg(), thirdArg())
-                onExport(arg(5))
-            }
-            vm =
-                if (library) {
-                    PatternAnnotationViewModel(
-                        SavedStateHandle(mapOf("savedPatternId" to libraryId)),
-                        route.counterRepository,
-                        route.layerRepository,
-                        route.annotationRepository,
-                        route.projectDocumentRepository,
-                        pdfExporter = exporter,
-                        analytics = analytics,
-                    )
-                } else {
-                    route.viewModel(exporter, analytics)
-                }
-            scope.backgroundScope.launch(UnconfinedTestDispatcher(scope.testScheduler)) {
-                vm.exportDestinationRequests.collect { requests += it }
-            }
-            scope.runCurrent()
-            vm.setExportContext(context)
-        }
-
-        fun request() = vm.requestAnnotatedPdfExport(context)
-
-        fun ready(): String {
-            val count = requests.size
-            request()
-            scope.runCurrent()
-            assertEquals(count + 1, requests.size)
-            return requests.last().also { assertTrue(vm.launchExportDestination(it, context)) }
-        }
-
-        fun deliver(
-            id: String,
-            destination: Uri? = this.destination,
-        ) = vm.exportAnnotatedPdf(id, context, destination, style)
-
-        fun switchToB(
-            sameUri: Boolean = false,
-            updateViewer: Boolean = true,
-        ) {
-            val document =
-                projectDocument(52L, 13L, false).let {
-                    if (sameUri) it.copy(localPdfUri = source.toString()) else it
-                }
-            val owner = PatternAnnotationOwner.Project(7L, document.documentKey)
-            route.documents.value += document
-            coEvery { route.layerRepository.getOrCreateMasterLayer(13L, document.documentKey) } returns
-                layer(32L, PatternAnnotationOwner.SavedPattern(13L, document.documentKey))
-            route.projectLayers.value = listOf(layer(42L, owner))
-            val uri =
-                if (sameUri) {
-                    source
-                } else {
-                    mockk<Uri>().also { uri ->
-                        every { uri.toString() } returns document.localPdfUri
-                    }
-                }
-            if (updateViewer) {
-                context = PatternPdfExportContext(uri, owner, document.id)
-                vm.setExportContext(context)
-            }
-            scope.runCurrent()
-        }
-
-        fun switchToA() {
-            route.projectLayers.value = listOf(route.projectLayer)
-            context = PatternPdfExportContext(source, route.projectOwner, 51L)
-            vm.setExportContext(context)
-            scope.runCurrent()
-        }
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher())
     }
 
-    private data class ExportCall(
-        val source: Uri,
-        val annotations: List<PatternAnnotation>,
-    )
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `context invalidated during immediate annotation read cleans the accepted destination`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val request = fixture.ready()
+            coEvery { fixture.route.annotationRepository.getForLayersForExport(any(), any(), any()) } answers {
+                fixture.vm.setExportContext(null)
+                emptyList()
+            }
+
+            fixture.deliver(request)
+            runCurrent()
+
+            coVerify(exactly = 1) { fixture.exporter.removeEmptyDestination(fixture.source, fixture.destination) }
+            assertTrue(fixture.exports.isEmpty())
+            assertFalse(fixture.vm.uiState.value.exportFailed)
+        }
+
+    @Test
+    fun `failed annotation read after destination selection removes only an empty destination`() =
+        runTest { verifyDestinationAfterReadFailure(IOException("annotation read failed")) }
+
+    @Test
+    fun `cancelled annotation read after destination selection removes only an empty destination`() =
+        runTest { verifyDestinationAfterReadFailure(CancellationException("annotation read cancelled")) }
+
+    @Test
+    fun `cancellation before exporter IO starts removes only the distinct empty destination`() =
+        runTest {
+            val exporter = realExporter()
+            val source = temporaryFolder.newFile("source.pdf")
+            val existing = temporaryFolder.newFile("existing.pdf").apply { writeText("Existing PDF") }
+            val empty = temporaryFolder.newFile("new.pdf")
+            val sourceUri = fileUri(source)
+            val style = mockk<PatternAnnotationRenderStyle>()
+
+            for (target in listOf(existing, source, empty)) {
+                val job =
+                    launch(start = CoroutineStart.UNDISPATCHED) {
+                        exporter.export(sourceUri, fileUri(target), emptyList(), emptyMap(), style) {}
+                    }
+                job.cancel()
+                job.join()
+                assertTrue(job.isCancelled)
+            }
+
+            assertTrue(source.isFile)
+            assertEquals("Existing PDF", existing.readText())
+            assertFalse(empty.exists())
+        }
+
+    private fun TestScope.realExporter(): PatternPdfExporter {
+        val context =
+            mockk<Context> {
+                every { filesDir } returns temporaryFolder.root
+                every { contentResolver } returns mockk()
+            }
+        return PatternPdfExporter.createForTest(context, StandardTestDispatcher(testScheduler))
+    }
+
+    private fun TestScope.verifyDestinationAfterReadFailure(failure: Exception) {
+        val exporter = spyk(realExporter())
+        val fixture = ExportFixture(this, exporter = exporter)
+        val source = temporaryFolder.newFile("source.pdf").apply { writeText("Original PDF") }
+        every { fixture.source.scheme } returns "file"
+        every { fixture.source.path } returns source.absolutePath
+        val existing = temporaryFolder.newFile("existing.pdf").apply { writeText("Existing PDF") }
+        val empty = temporaryFolder.newFile("new.pdf")
+        val annotations = fixture.route.annotationRepository
+
+        for (target in listOf(existing, empty)) {
+            coEvery { annotations.getForLayersForExport(any(), any(), any()) } returns emptyList()
+            val request = fixture.ready()
+            coEvery { annotations.getForLayersForExport(any(), any(), any()) } throws failure
+            fixture.deliver(request, destination = fileUri(target))
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            assertEquals(failure !is CancellationException, fixture.vm.uiState.value.exportFailed)
+        }
+
+        assertEquals("Original PDF", source.readText())
+        assertEquals("Existing PDF", existing.readText())
+        assertFalse("The picker-created file remained empty after export stopped", empty.exists())
+    }
+
+    private fun fileUri(file: File): Uri =
+        mockk {
+            every { scheme } returns "file"
+            every { path } returns file.absolutePath
+        }
 }
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private class ExportFixture(
+    val scope: TestScope,
+    library: Boolean = false,
+    libraryId: Long = 12L,
+    val exporter: PatternPdfExporter = mockk(relaxUnitFun = true),
+) {
+    val route = projectRoute()
+    val analytics = mockk<UsageAnalytics>(relaxed = true)
+    val source = mockk<Uri>()
+    val destination = mockk<Uri>()
+    val style = mockk<PatternAnnotationRenderStyle>()
+    var context =
+        PatternPdfExportContext(
+            source,
+            if (library) {
+                PatternAnnotationOwner.SavedPattern(libraryId, PatternAnnotationDocumentKey.savedPattern(libraryId))
+            } else {
+                route.projectOwner
+            },
+            if (library) null else 51L,
+        )
+    var rows = emptyList<PatternAnnotation>()
+    val requests = mutableListOf<String>()
+    val queries = mutableListOf<List<Long>>()
+    val exports = mutableListOf<ExportCall>()
+    var onPreflight: suspend () -> Unit = {}
+    var onExport: suspend ((PatternPdfExportProgress) -> Unit) -> Unit = {}
+    val vm: PatternAnnotationViewModel
+
+    init {
+        every { source.toString() } returns "file:///document-51.pdf"
+        if (library) {
+            val owner = context.owner as PatternAnnotationOwner.SavedPattern
+            coEvery { route.layerRepository.getOrCreateMasterLayer(libraryId, owner.documentKey) } returns
+                layer(31L, owner)
+        }
+        every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+        coEvery { route.annotationRepository.getForLayersForExport(any(), any(), any()) } answers {
+            val ids = firstArg<List<Long>>()
+            queries += ids
+            ids.flatMap { id -> rows.filter { it.layerId == id } }
+        }
+        coEvery { exporter.preflight(any(), any(), any()) } coAnswers {
+            onPreflight()
+            mockk()
+        }
+        coEvery { exporter.export(any(), any(), any(), any(), any(), any()) } coAnswers {
+            exports += ExportCall(firstArg(), thirdArg())
+            onExport(arg(5))
+        }
+        vm =
+            if (library) {
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to libraryId)),
+                    route.counterRepository,
+                    route.layerRepository,
+                    route.annotationRepository,
+                    route.projectDocumentRepository,
+                    pdfExporter = exporter,
+                    analytics = analytics,
+                )
+            } else {
+                route.viewModel(exporter, analytics)
+            }
+        scope.backgroundScope.launch(UnconfinedTestDispatcher(scope.testScheduler)) {
+            vm.exportDestinationRequests.collect { requests += it }
+        }
+        scope.runCurrent()
+        vm.setExportContext(context)
+    }
+
+    fun request() = vm.requestAnnotatedPdfExport(context)
+
+    fun ready(): String {
+        val count = requests.size
+        request()
+        scope.runCurrent()
+        assertEquals(count + 1, requests.size)
+        return requests.last().also { assertTrue(vm.launchExportDestination(it, context)) }
+    }
+
+    fun deliver(
+        id: String,
+        destination: Uri? = this.destination,
+    ) = vm.exportAnnotatedPdf(id, context, destination, style)
+
+    fun switchToB(
+        sameUri: Boolean = false,
+        updateViewer: Boolean = true,
+    ) {
+        val document =
+            projectDocument(52L, 13L, false).let {
+                if (sameUri) it.copy(localPdfUri = source.toString()) else it
+            }
+        val owner = PatternAnnotationOwner.Project(7L, document.documentKey)
+        route.documents.value += document
+        coEvery { route.layerRepository.getOrCreateMasterLayer(13L, document.documentKey) } returns
+            layer(32L, PatternAnnotationOwner.SavedPattern(13L, document.documentKey))
+        route.projectLayers.value = listOf(layer(42L, owner))
+        val uri =
+            if (sameUri) {
+                source
+            } else {
+                mockk<Uri>().also { uri ->
+                    every { uri.toString() } returns document.localPdfUri
+                }
+            }
+        if (updateViewer) {
+            context = PatternPdfExportContext(uri, owner, document.id)
+            vm.setExportContext(context)
+        }
+        scope.runCurrent()
+    }
+
+    fun switchToA() {
+        route.projectLayers.value = listOf(route.projectLayer)
+        context = PatternPdfExportContext(source, route.projectOwner, 51L)
+        vm.setExportContext(context)
+        scope.runCurrent()
+    }
+}
+
+private data class ExportCall(
+    val source: Uri,
+    val annotations: List<PatternAnnotation>,
+)
 
 // Project-reitin jaettu alustus: sama mock-kokoonpano toistui kolmessa testissä
 private class ProjectRoute(

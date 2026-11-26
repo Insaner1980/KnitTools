@@ -433,6 +433,18 @@ class NotesEditorViewModel
             baseNotes: String,
         ): Boolean = notes.length.toLong() + baseNotes.length <= MAX_INLINE_DRAFT_CHARS
 
+        private suspend fun retainLargeDraft(
+            loadedProjectId: Long,
+            fileId: UUID?,
+            notes: String,
+            baseNotes: String,
+        ) {
+            if (fileId == null || fitsSavedState(notes, baseNotes)) return
+            draftFileMutex.withLock {
+                draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))
+            }
+        }
+
         override fun onCleared() {
             val state = _uiState.value
             val loadedProjectId = projectId ?: return
@@ -447,16 +459,6 @@ class NotesEditorViewModel
             val interrupted = interruptedWrite
             val fileId = draftFileId()
 
-            suspend fun retainDraftFile(
-                notes: String,
-                base: String,
-            ) {
-                if (fileId == null || fitsSavedState(notes, base)) return
-                draftFileMutex.withLock {
-                    draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, base))
-                }
-            }
-
             @Suppress("TooGenericExceptionCaught")
             applicationScope.launch {
                 try {
@@ -467,7 +469,7 @@ class NotesEditorViewModel
                             interrupted.job.join()
                             val storedNotes =
                                 readStoredNotes(loadedProjectId).getOrElse {
-                                    retainDraftFile(draftBeforeClear, baseBeforeClear)
+                                    retainLargeDraft(loadedProjectId, fileId, draftBeforeClear, baseBeforeClear)
                                     return@launch
                                 } ?: return@launch
                             interrupted.reconcile(baseBeforeClear, draftBeforeClear, storedNotes, latestStoredNotes)
@@ -476,7 +478,7 @@ class NotesEditorViewModel
                         clearDraftFile()
                         return@launch
                     }
-                    retainDraftFile(notesToSave, baseNotes)
+                    retainLargeDraft(loadedProjectId, fileId, notesToSave, baseNotes)
                     val result =
                         repository.saveProjectNotes(
                             id = loadedProjectId,

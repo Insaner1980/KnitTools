@@ -88,11 +88,10 @@ class PatternDocumentStorageTest {
     fun `cancelled delivery of a published copy deletes only that new PDF`() =
         runTest {
             val filesDir = temporaryFolder.newFolder()
-            val source = File(filesDir, "source.pdf").apply { writeText("source bytes") }
+            val source = temporaryFolder.newFile("source.pdf").apply { writeText("source bytes") }
             val targetDirectory = File(filesDir, "pattern_pdfs/7").apply { mkdirs() }
             val existing = File(targetDirectory, "chart.pdf").apply { writeText("existing bytes") }
             val context = mockk<Context>()
-            val resolver = mockk<ContentResolver>()
             val storageManager = mockk<StorageManager>()
             val sourceUri = mockk<Uri>()
             val copiedUri = mockk<Uri>()
@@ -100,10 +99,8 @@ class PatternDocumentStorageTest {
             val storage = spyk(PatternDocumentStorage(StandardTestDispatcher(testScheduler)), recordPrivateCalls = true)
             every { context.filesDir } returns filesDir
             every { context.packageName } returns "com.finnvek.knittools"
-            every { context.contentResolver } returns resolver
-            every { sourceUri.scheme } returns "content"
-            every { sourceUri.authority } returns "provider"
-            every { resolver.openInputStream(sourceUri) } answers { source.inputStream() }
+            every { sourceUri.scheme } returns "file"
+            every { sourceUri.path } returns source.absolutePath
             every { context.getSystemService(StorageManager::class.java) } returns storageManager
             every { storageManager.getUuidForPath(filesDir) } returns storageUuid
             every { storageManager.getAllocatableBytes(storageUuid) } returns 64L * 1024 * 1024

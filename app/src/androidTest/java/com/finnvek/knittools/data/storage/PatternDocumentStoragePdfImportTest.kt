@@ -12,11 +12,15 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -90,35 +94,107 @@ class PatternDocumentStoragePdfImportTest {
         }
 
     @Test
-    fun providerCloseFailureDoesNotLeaveAnUnreturnedCopy() =
+    fun providerFileSubsectionImportsOnlyTheDeclaredPdfBytes() =
         runTest {
-            val source = File(sourceDirectory, "provider-source.pdf")
-            writeOnePagePdf(source)
-            val resolver =
+            val pdf = fixture.newFile("chart.pdf").also(::writeOnePagePdf).readBytes()
+            val prefix = "container header".toByteArray()
+            val container = fixture.newFile("container").apply { writeBytes(prefix + pdf + prefix) }
+            val sourceContext =
+                providerContext {
+                    AssetFileDescriptor(
+                        ParcelFileDescriptor.open(container, ParcelFileDescriptor.MODE_READ_ONLY),
+                        prefix.size.toLong(),
+                        pdf.size.toLong(),
+                    )
+                }
+
+            val imported = storage.copyPdfToInternal(sourceContext, PROJECT_ID, PROVIDER_URI, "chart.pdf")
+
+            assertArrayEquals(pdf, File(requireNotNull(imported?.toUri()?.path)).readBytes())
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun projectImportWaitsForSharedPipeCopyBeforeOpeningItsProvider() =
+        runTest {
+            val pdf = fixture.newFile("chart.pdf").also(::writeOnePagePdf)
+            val (readEnd, writeEnd) = ParcelFileDescriptor.createPipe()
+            val pipeOpened = CountDownLatch(1)
+            val sourceContext =
+                providerContext { uri ->
+                    if (uri == PROVIDER_URI) {
+                        pipeOpened.countDown()
+                        AssetFileDescriptor(readEnd, 0L, AssetFileDescriptor.UNKNOWN_LENGTH)
+                    } else {
+                        AssetFileDescriptor(
+                            ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY),
+                            0L,
+                            AssetFileDescriptor.UNKNOWN_LENGTH,
+                        )
+                    }
+                }
+            val testStorage = PatternDocumentStorage(StandardTestDispatcher(testScheduler))
+            val shared = async { testStorage.copyPdfToInternal(sourceContext, 0L, PROVIDER_URI, "shared.pdf") }
+            val project =
+                ParcelFileDescriptor.AutoCloseOutputStream(writeEnd).use { writer ->
+                    runCurrent()
+                    assertTrue(pipeOpened.await(5, TimeUnit.SECONDS))
+                    val queued =
+                        async {
+                            testStorage.copyPdfToInternal(
+                                sourceContext,
+                                PROJECT_ID,
+                                "content://knittools.test/next".toUri(),
+                                "next.pdf",
+                            )
+                        }
+                    runCurrent()
+                    assertTrue(queued.isActive)
+                    assertFalse(targetDirectory.exists())
+                    writer.write(pdf.readBytes())
+                    queued
+                }
+
+            for (result in listOf(shared.await(), project.await())) {
+                assertArrayEquals(pdf.readBytes(), File(requireNotNull(result?.toUri()?.path)).readBytes())
+            }
+        }
+
+    private fun providerContext(open: (Uri) -> AssetFileDescriptor): Context =
+        object : ContextWrapper(context) {
+            private val resolver =
                 ContentResolver.wrap(
                     object : PdfTestContentProvider() {
                         override fun openAssetFile(
                             uri: Uri,
                             mode: String,
-                        ): AssetFileDescriptor =
-                            object : AssetFileDescriptor(
-                                ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY),
-                                0L,
-                                UNKNOWN_LENGTH,
-                            ) {
-                                override fun createInputStream() =
-                                    object : AutoCloseInputStream(this) {
-                                        override fun close() {
-                                            super.close()
-                                            throw IOException("Source failed to close")
-                                        }
-                                    }
-                            }
+                        ): AssetFileDescriptor = open(uri)
                     },
                 )
+
+            override fun getContentResolver(): ContentResolver = resolver
+        }
+
+    @Test
+    fun providerCloseFailureDoesNotLeaveAnUnreturnedCopy() =
+        runTest {
+            val source = File(sourceDirectory, "provider-source.pdf")
+            writeOnePagePdf(source)
             val sourceContext =
-                object : ContextWrapper(context) {
-                    override fun getContentResolver(): ContentResolver = resolver
+                providerContext {
+                    object : AssetFileDescriptor(
+                        ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY),
+                        0L,
+                        UNKNOWN_LENGTH,
+                    ) {
+                        override fun createInputStream() =
+                            object : AutoCloseInputStream(this) {
+                                override fun close() {
+                                    super.close()
+                                    throw IOException("Source failed to close")
+                                }
+                            }
+                    }
                 }
             targetDirectory.mkdirs()
             val existing = File(targetDirectory, "chart.pdf").apply { writeText("existing file") }
@@ -184,5 +260,6 @@ class PatternDocumentStoragePdfImportTest {
 
     private companion object {
         const val PROJECT_ID = 93_400L
+        val PROVIDER_URI = "content://knittools.test/chart.pdf".toUri()
     }
 }

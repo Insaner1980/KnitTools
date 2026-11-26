@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.backup
 
 import android.content.ContentResolver
 import android.content.Context
+import android.content.res.AssetFileDescriptor
 import android.net.Uri
 import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
@@ -89,6 +90,7 @@ internal class ContentResolverBackupProviderIo internal constructor(
             val input = deadline.call { handle.inputStream() }
             copyFromProvider(input, output, maxBytes, deadline, check)
             deadline.call { handle.checkError() }
+            deadline.call { input.close() }
         }
     }
 
@@ -282,13 +284,19 @@ private class AndroidBackupProviderRequest(
     private val descriptor = AtomicReference<ParcelFileDescriptor?>()
 
     override fun open(): BackupProviderHandle? {
-        val opened = resolver.openFileDescriptor(uri, mode, signal) ?: return null
+        val asset =
+            if (mode == "r") {
+                resolver.openAssetFileDescriptor(uri, mode, signal) ?: return null
+            } else {
+                null
+            }
+        val opened = asset?.parcelFileDescriptor ?: resolver.openFileDescriptor(uri, mode, signal) ?: return null
         descriptor.set(opened)
         if (cancelled.get()) {
             opened.closeWithError("Backup transfer cancelled")
             throw CancellationException("Provider operation was cancelled")
         }
-        return AndroidBackupProviderHandle(opened)
+        return AndroidBackupProviderHandle(opened, asset)
     }
 
     override fun cancelOpen() {
@@ -308,9 +316,10 @@ private class AndroidBackupProviderRequest(
 
 private class AndroidBackupProviderHandle(
     private val descriptor: ParcelFileDescriptor,
+    private val readAsset: AssetFileDescriptor?,
 ) : BackupProviderHandle,
     Closeable by descriptor {
-    override fun inputStream(): InputStream = ParcelFileDescriptor.AutoCloseInputStream(descriptor)
+    override fun inputStream(): InputStream = checkNotNull(readAsset).createInputStream()
 
     override fun outputStream(): OutputStream = ParcelFileDescriptor.AutoCloseOutputStream(descriptor)
 

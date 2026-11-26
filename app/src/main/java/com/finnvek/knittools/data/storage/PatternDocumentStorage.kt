@@ -17,6 +17,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.DataOutputStream
 import java.io.File
@@ -75,7 +77,7 @@ class PatternDocumentStorage
     constructor(
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
-        private val pdfProviderIoLock = Any()
+        private val pdfCopyMutex = Mutex()
         private var pdfProviderIo: BackupProviderIo? = null
 
         fun createCaptureImageFile(
@@ -425,56 +427,29 @@ class PatternDocumentStorage
                 val copiedUri =
                     withContext(ioDispatcher) {
                         if (AppFileStorage.isInternalUri(context, sourceUri)) return@withContext null
-                        val maxCopyBytes = availablePdfCopyBytes(context) ?: return@withContext null
-                        val copyContext = coroutineContext
-
-                        try {
+                        pdfCopyMutex.withLock {
+                            val maxCopyBytes = availablePdfCopyBytes(context) ?: return@withLock null
                             val copiedFile =
-                                PatternDocumentFiles.writeUniquePdfSuspending(
+                                PatternDocumentFiles.writeUniquePdfOrThrow(
                                     directory = File(context.filesDir, "pattern_pdfs/$projectId"),
                                     // A discarded share must not make its URI available to a later request.
                                     fileName = if (projectId == 0L) "${UUID.randomUUID()}.pdf" else fileName,
                                 ) { targetFile ->
-                                    when (sourceUri.scheme) {
-                                        ContentResolver.SCHEME_CONTENT -> {
-                                            pdfProviderIo(context).read(
-                                                source = sourceUri,
-                                                target = targetFile,
-                                                maxBytes = maxCopyBytes,
-                                                check = { copyContext.ensureActive() },
-                                            )
-                                        }
-
-                                        ContentResolver.SCHEME_FILE -> {
-                                            val sourceFile =
-                                                sourceUri.path?.let(::File)
-                                                    ?: throw IOException("Pattern PDF source is unavailable")
-                                            sourceFile.inputStream().use { input ->
-                                                PatternDocumentFiles.copyBounded(
-                                                    input = input,
-                                                    target = targetFile,
-                                                    maxBytes = maxCopyBytes,
-                                                    onChunk = { copyContext.ensureActive() },
-                                                )
-                                            }
-                                        }
-
-                                        else -> throw IOException("Pattern PDF source is unavailable")
-                                    }
-                                    copyContext.ensureActive()
+                                    copyPdfSource(context, sourceUri, targetFile, maxCopyBytes)
+                                    coroutineContext.ensureActive()
                                     requireReadablePdf(context, targetFile)
-                                    copyContext.ensureActive()
+                                    coroutineContext.ensureActive()
                                 }
                             undeliveredCopy = copiedFile
-                            copiedFile?.toUri()?.toString()
-                        } catch (failure: CancellationException) {
-                            throw failure
-                        } catch (_: Exception) {
-                            null
+                            copiedFile.toUri().toString()
                         }
                     }
                 undeliveredCopy = null
                 return copiedUri
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (_: Exception) {
+                return null
             } finally {
                 undeliveredCopy?.let { file ->
                     withContext(NonCancellable + ioDispatcher) {
@@ -484,10 +459,33 @@ class PatternDocumentStorage
             }
         }
 
-        private fun pdfProviderIo(context: Context): BackupProviderIo =
-            synchronized(pdfProviderIoLock) {
-                pdfProviderIo ?: ContentResolverBackupProviderIo(context).also { pdfProviderIo = it }
+        private suspend fun copyPdfSource(
+            context: Context,
+            sourceUri: Uri,
+            targetFile: File,
+            maxCopyBytes: Long,
+        ) {
+            val copyContext = coroutineContext
+            when (sourceUri.scheme) {
+                ContentResolver.SCHEME_CONTENT -> {
+                    pdfProviderIo(context).read(sourceUri, targetFile, maxCopyBytes) { copyContext.ensureActive() }
+                }
+
+                ContentResolver.SCHEME_FILE -> {
+                    val sourceFile = sourceUri.path?.let(::File) ?: throw IOException("Pattern PDF source is unavailable")
+                    sourceFile.inputStream().use { input ->
+                        PatternDocumentFiles.copyBounded(input, targetFile, maxCopyBytes) { copyContext.ensureActive() }
+                    }
+                }
+
+                else -> {
+                    throw IOException("Pattern PDF source is unavailable")
+                }
             }
+        }
+
+        private fun pdfProviderIo(context: Context): BackupProviderIo =
+            pdfProviderIo ?: ContentResolverBackupProviderIo(context).also { pdfProviderIo = it }
 
         private fun requireReadablePdf(
             context: Context,
@@ -617,34 +615,7 @@ internal object PatternDocumentFiles {
             null
         }
 
-    suspend fun writeUniquePdfSuspending(
-        directory: File,
-        fileName: String,
-        write: suspend (File) -> Unit,
-    ): File? =
-        try {
-            if (!directory.isDirectory && !directory.mkdirs() && !directory.isDirectory) {
-                throw IOException("Pattern PDF directory creation failed")
-            }
-            prepareUnassignedDirectory(directory)
-            val safeFileName = safePdfFileName(fileName)
-            val tempFile = createTempFile(directory, safeFileName)
-            try {
-                write(tempFile)
-                moveToUniquePdf(tempFile, directory, safeFileName)
-                    ?: throw IOException("Pattern PDF publish failed")
-            } finally {
-                if (tempFile.exists() && !tempFile.delete()) {
-                    tempFile.deleteOnExit()
-                }
-            }
-        } catch (failure: CancellationException) {
-            throw failure
-        } catch (_: Exception) {
-            null
-        }
-
-    fun writeUniquePdfOrThrow(
+    inline fun writeUniquePdfOrThrow(
         directory: File,
         fileName: String,
         write: (File) -> Unit,

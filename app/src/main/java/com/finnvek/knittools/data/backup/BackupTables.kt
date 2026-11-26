@@ -9,6 +9,7 @@ import com.finnvek.knittools.data.local.SavedPatternMigration30
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.ProjectFolderNameValidationResult
+import com.finnvek.knittools.domain.model.normalizeRemotePatternImageUrl
 import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
 import com.finnvek.knittools.domain.model.validateProjectFolderName
 import kotlinx.serialization.json.JsonArray
@@ -224,6 +225,12 @@ internal object BackupTables {
                 val row = inputColumns.zip(values).toMap().toMutableMap()
                 (columns - inputColumns.toSet()).forEach { row[it] = JsonNull }
                 validateFields(table, row, budget)
+                if (table == "saved_patterns") {
+                    val thumbnail = row["thumbnailUrl"] as? JsonPrimitive
+                    if (thumbnail != null && thumbnail.isString) {
+                        row["thumbnailUrl"] = JsonPrimitive(normalizeRemotePatternImageUrl(thumbnail.content))
+                    }
+                }
                 validateYarnCardIds(table, row)
                 budget.observeRow(table, row)
                 consume(row)

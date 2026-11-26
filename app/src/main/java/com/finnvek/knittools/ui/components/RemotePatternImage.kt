@@ -15,8 +15,7 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
-import java.net.URI
-import java.net.URISyntaxException
+import com.finnvek.knittools.domain.model.normalizeRemotePatternImageUrl
 
 @Composable
 fun RemotePatternImage(
@@ -46,26 +45,3 @@ fun RemotePatternImage(
         )
     }
 }
-
-internal fun normalizeRemotePatternImageUrl(imageUrl: String?): String? {
-    val trimmedUrl = imageUrl?.trim().orEmpty()
-    if (trimmedUrl.isEmpty() || trimmedUrl.length > REMOTE_PATTERN_IMAGE_URL_MAX_LENGTH) return null
-
-    val uri =
-        try {
-            URI(trimmedUrl)
-        } catch (_: URISyntaxException) {
-            return null
-        }
-
-    val hasValidAuthority =
-        uri.scheme.equals("https", ignoreCase = true) &&
-            !uri.isOpaque &&
-            !uri.host.isNullOrBlank()
-    if (!hasValidAuthority) return null
-    if (uri.rawUserInfo != null || uri.port > 65_535) return null
-
-    return trimmedUrl
-}
-
-private const val REMOTE_PATTERN_IMAGE_URL_MAX_LENGTH = 2_048

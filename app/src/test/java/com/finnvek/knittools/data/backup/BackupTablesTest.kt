@@ -23,6 +23,25 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 
 class BackupTablesTest {
+    @Test fun restoredPatternsKeepTheirMetadataAndOnlyTrustedThumbnails() {
+        val directory = temporary.newFolder()
+        val file = File(directory, "tables/saved_patterns.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        val allowed = "https://images4-f.ravelrycache.com/pattern.png"
+        val urls = listOf("https://printer.local/preview", allowed, null)
+        file.bufferedWriter().use { output ->
+            output.appendLine("""["name","thumbnailUrl"]""")
+            urls.forEachIndexed { index, url ->
+                output.appendLine(JsonArray(listOf(JsonPrimitive("Pattern $index"), JsonPrimitive(url))).toString())
+            }
+        }
+        val restored = mutableMapOf<String, JsonElement>()
+        BackupTables.read(directory, "saved_patterns", listOf("name", "thumbnailUrl")) { row ->
+            restored[row.getValue("name").jsonPrimitive.content] = row.getValue("thumbnailUrl")
+        }
+        val expected = mapOf("Pattern 0" to JsonNull, "Pattern 1" to JsonPrimitive(allowed), "Pattern 2" to JsonNull)
+        assertEquals(expected, restored)
+    }
+
     @Test fun schema27HistoryHeaderDefaultsOnlyTheNewSessionSnapshot() {
         val directory = schema27HistoryFixture()
         val restored = readCounterHistory(directory, schemaVersion = 27)

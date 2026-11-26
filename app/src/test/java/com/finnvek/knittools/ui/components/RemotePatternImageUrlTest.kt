@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.components
 
+import com.finnvek.knittools.domain.model.normalizeRemotePatternImageUrl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -28,9 +29,9 @@ class RemotePatternImageUrlTest {
     @Test
     fun `HTTPS URL is trimmed and preserved`() {
         assertEquals(
-            "https://images.example.test/pattern.png?size=large",
+            "https://images4-f.ravelrycache.com/pattern.png?size=large",
             normalizeRemotePatternImageUrl(
-                "  https://images.example.test/pattern.png?size=large  ",
+                "  https://images4-f.ravelrycache.com/pattern.png?size=large  ",
             ),
         )
     }
@@ -43,6 +44,15 @@ class RemotePatternImageUrlTest {
             "https://images.example.test/%zz",
             "https://bad_host.example.test/pattern.png",
             "https://images.example.test:65536/pattern.png",
+            "https://images.example.test/pattern.png",
+            "https://127.0.0.1/image",
+            "https://[::1]/image",
+            "https://printer.local/image",
+            "https://images4-f.ravelrycache.com.example.org/image",
+            "https://images4-f.ravelrycache.com:8443/image",
+            "https://user@images4-f.ravelrycache.com/image",
+            "https://images4-f.ravelrycache.com@localhost/image",
+            "https://images4-f.ravelrycache.com:/image",
         ).forEach { url ->
             assertNull(normalizeRemotePatternImageUrl(url))
         }
@@ -51,8 +61,8 @@ class RemotePatternImageUrlTest {
     @Test
     fun `HTTPS scheme matching is case insensitive`() {
         assertEquals(
-            "HTTPS://images.example.test/pattern.png",
-            normalizeRemotePatternImageUrl("HTTPS://images.example.test/pattern.png"),
+            "HTTPS://IMAGES4-H.RAVELRYCACHE.COM:443/pattern.png",
+            normalizeRemotePatternImageUrl("HTTPS://IMAGES4-H.RAVELRYCACHE.COM:443/pattern.png"),
         )
     }
 }

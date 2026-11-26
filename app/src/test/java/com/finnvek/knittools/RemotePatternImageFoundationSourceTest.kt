@@ -5,7 +5,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.w3c.dom.Element
-import java.nio.file.Files
 import javax.xml.parsers.DocumentBuilderFactory
 
 class RemotePatternImageFoundationSourceTest {
@@ -30,21 +29,12 @@ class RemotePatternImageFoundationSourceTest {
     }
 
     @Test
-    fun `production relies on Coil service loading instead of a custom ImageLoader registry`() {
+    fun `the shared image loader protects network destinations`() {
         val component = ProjectSourceFiles.read(REMOTE_PATTERN_IMAGE)
-        val mainSourceRoot = ProjectSourceFiles.file(MAIN_SOURCE_ROOT)
-        val customRegistrySource =
-            Files.walk(mainSourceRoot).use { paths ->
-                paths
-                    .filter { path -> path.fileName.toString().endsWith(".kt") }
-                    .map { path -> ProjectSourceFiles.read(path) }
-                    .anyMatch { source ->
-                        source.contains("ImageLoader.Builder(") ||
-                            source.contains("KtorNetworkFetcherFactory(")
-                    }
-            }
+        val application = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/App.kt")
 
-        assertFalse(customRegistrySource)
+        assertTrue(application.contains("SingletonImageLoader.Factory"))
+        assertTrue(application.contains("install(PatternThumbnailNetwork)"))
         assertTrue(component.contains("SingletonImageLoader.get(context)"))
     }
 
@@ -135,7 +125,6 @@ class RemotePatternImageFoundationSourceTest {
         private const val ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"
         private const val VERSION_CATALOG = "gradle/libs.versions.toml"
         private const val APP_BUILD_SCRIPT = "app/build.gradle.kts"
-        private const val MAIN_SOURCE_ROOT = "app/src/main/java"
         private const val REMOTE_PATTERN_IMAGE =
             "app/src/main/java/com/finnvek/knittools/ui/components/RemotePatternImage.kt"
         private const val PATTERN_CARD =

@@ -16,11 +16,11 @@ class YarnCardFlowSourceTest {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
 
-        assertTrue(navGraph.contains("val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId"))
+        assertTrue(navGraph.contains("val yarnDeleteErrorId by libraryViewModel.yarnDeleteError.id"))
         assertTrue(navGraph.contains("deleteErrorId = yarnDeleteErrorId"))
-        assertTrue(screen.contains("LaunchedEffect(state.deleteErrorId)"))
-        assertTrue(screen.contains("state.deleteErrorId > lastHandledDeleteErrorId"))
-        assertTrue(screen.contains("SnackbarHost(hostState = snackbarHostState)"))
+        assertTrue(navGraph.contains("deliverDeleteError = libraryViewModel.yarnDeleteError::deliver"))
+        assertTrue(screen.contains("LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError,"))
+        assertTrue(screen.contains("LibrarySnackbarHost(hostState = snackbarHostState)"))
     }
 
     private companion object {

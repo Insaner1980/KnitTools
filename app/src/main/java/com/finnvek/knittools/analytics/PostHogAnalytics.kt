@@ -55,9 +55,35 @@ class PostHogAnalytics
             allowed: Boolean,
             generation: String? = null,
         ) {
+            requestConsentChange(allowed, generation)?.let(::applyConsentChange)
+        }
+
+        internal fun applyStoredConsent(
+            allowed: Boolean,
+            generation: String?,
+        ) {
+            val revision = requestConsentChange(allowed, generation)
+            if (revision == null) {
+                initialConsentLoaded.complete(Unit)
+                return
+            }
+            applicationScope.launch(ioDispatcher) {
+                try {
+                    applyConsentChange(revision)
+                } finally {
+                    initialConsentLoaded.complete(Unit)
+                }
+            }
+        }
+
+        private fun requestConsentChange(
+            allowed: Boolean,
+            generation: String?,
+        ): Long? {
+            val revokedClient: PostHogConsentClient?
             val revision =
                 synchronized(this) {
-                    if (allowed == requestedEnabled && generation == consentGeneration) return
+                    if (allowed == requestedEnabled && generation == consentGeneration) return null
                     requestedEnabled = allowed
                     consentGeneration = generation
                     consentRevision++
@@ -66,16 +92,20 @@ class PostHogAnalytics
                     enabled = false
                     foregroundStarted = null
                     screenStarted = null
-                    client?.let {
+                    revokedClient = client
+                    revokedClient?.let {
                         it.blockDelivery()
                         retiredClients.add(it)
                     }
                     client = null
-                    // Revoking an unfinished initialization must not wait for it.
-                    if (!allowed && retiredClients.isEmpty()) return
-                    consentRevision
+                    consentRevision.takeIf { allowed || retiredClients.isNotEmpty() }
                 }
 
+            revokedClient?.let { safely { it.cancelDelivery() } }
+            return revision
+        }
+
+        private fun applyConsentChange(revision: Long) {
             // Only consent workers take this lock; callbacks need only the short state monitor.
             // Serialize queue sweeps and SDK lifetimes, including superseded requests.
             synchronized(clientWorkLock) {

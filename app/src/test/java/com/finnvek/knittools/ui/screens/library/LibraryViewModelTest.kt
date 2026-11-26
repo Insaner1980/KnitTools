@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.library
 
+import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -95,14 +96,48 @@ class LibraryViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() =
+    private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()) =
         LibraryViewModel(
             savedPatternRepository = savedPatternRepository,
             yarnCardRepository = yarnCardRepository,
             progressPhotoRepository = progressPhotoRepository,
             proManager = proManager,
             counterRepository = counterRepository,
+            savedStateHandle = savedStateHandle,
         )
+
+    @Test
+    fun restoredLibraryDeliversUnseenErrorsOnceAndContinuesYarnSuccessIds() =
+        runTest {
+            val photo = progressPhoto(4L)
+            coEvery { progressPhotoRepository.deletePhoto(photo) } throws IOException()
+            coEvery { yarnCardRepository.deleteCards(listOf(3L)) } returns false
+            coEvery { yarnCardRepository.saveCard(any()) } returnsMany listOf(null, 19L, 20L)
+            val input = ManualYarnCardInput(yarnName = "Wool")
+            val handle = SavedStateHandle()
+            val original = createViewModel(handle)
+            original.deletePhoto(photo)
+            original.enterYarnSelectMode(3L)
+            original.deleteSelectedYarn()
+            assertTrue(original.createManualYarnCard(input))
+            runCurrent()
+            assertTrue(original.yarnDeleteError.showImmediately(original.yarnDeleteError.id.value))
+            assertTrue(original.retryCreateManualYarnCard())
+            runCurrent()
+            assertEquals(1L, original.yarnSaveSuccessId.value)
+
+            val restored = createViewModel(SavedStateHandle(handle.keys().associateWith { handle.get<Long>(it) }))
+            assertTrue(restored.photoDeleteError.showImmediately(restored.photoDeleteError.id.value))
+            assertFalse(restored.photoDeleteError.showImmediately(restored.photoDeleteError.id.value))
+            assertTrue(restored.yarnSaveError.showImmediately(restored.yarnSaveError.id.value))
+            assertFalse(restored.yarnDeleteError.showImmediately(restored.yarnDeleteError.id.value))
+            assertEquals(1L, restored.yarnSaveSuccessId.value)
+            restored.deletePhoto(photo)
+            assertTrue(restored.createManualYarnCard(input))
+            runCurrent()
+            assertTrue(restored.photoDeleteError.showImmediately(restored.photoDeleteError.id.value))
+            assertEquals(2L, restored.yarnSaveSuccessId.value)
+        }
 
     @Test
     fun failedManualCreationRetainsDraftAndRetryWaitsForCommittedSuccess() =
@@ -118,7 +153,7 @@ class LibraryViewModelTest {
             assertTrue(model.createManualYarnCard(input.copy(yarnName = "Ignored")))
             pending.complete(null)
             runCurrent()
-            assertEquals(1L, model.yarnSaveErrorId.value)
+            assertEquals(1L, model.yarnSaveError.id.value)
             assertEquals(0L, model.yarnSaveSuccessId.value)
             assertFalse(model.isSavingYarnCard.value)
             coEvery { yarnCardRepository.saveCard(any()) } returns 19L
@@ -212,10 +247,11 @@ class LibraryViewModelTest {
         }
 
     @Test
-    fun `failed pattern delete clears selection state`() =
+    fun `failed pattern delete clears selection and delivers its error once after recreation`() =
         runTest {
             coEvery { savedPatternRepository.deleteByIds(listOf(1L)) } throws RuntimeException("delete failed")
-            val viewModel = createViewModel()
+            val handle = SavedStateHandle()
+            val viewModel = createViewModel(handle)
 
             viewModel.enterPatternSelectMode(1L)
             viewModel.deleteSelectedPatterns()
@@ -224,6 +260,12 @@ class LibraryViewModelTest {
             assertFalse(viewModel.isPatternSelectMode.value)
             assertTrue(viewModel.selectedPatternIds.value.isEmpty())
             assertEquals(1L, viewModel.patternDeleteErrorId.value)
+            val restoredHandle = SavedStateHandle(handle.keys().associateWith { handle.get<Long>(it) })
+            val restored = createViewModel(restoredHandle)
+            assertTrue(restored.patternDeleteError.showImmediately(restored.patternDeleteErrorId.value))
+            val reopenedHandle = SavedStateHandle(restoredHandle.keys().associateWith { restoredHandle.get<Long>(it) })
+            val reopened = createViewModel(reopenedHandle)
+            assertFalse(reopened.patternDeleteError.showImmediately(reopened.patternDeleteErrorId.value))
         }
 
     @Test
@@ -335,7 +377,7 @@ class LibraryViewModelTest {
 
             assertFalse(viewModel.isYarnSelectMode.value)
             assertTrue(viewModel.selectedYarnIds.value.isEmpty())
-            assertEquals(1L, viewModel.yarnDeleteErrorId.value)
+            assertEquals(1L, viewModel.yarnDeleteError.id.value)
         }
 
     @Test
@@ -378,7 +420,7 @@ class LibraryViewModelTest {
             assertTrue(viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = "Blue")))
             advanceUntilIdle()
 
-            assertEquals(1L, viewModel.yarnSaveErrorId.value)
+            assertEquals(1L, viewModel.yarnSaveError.id.value)
         }
 
     @Test
@@ -424,7 +466,7 @@ class LibraryViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
-            assertEquals(0L, viewModel.yarnSaveErrorId.value)
+            assertEquals(0L, viewModel.yarnSaveError.id.value)
             assertFalse(submitted)
         }
 
@@ -506,7 +548,7 @@ class LibraryViewModelTest {
             assertFalse(viewModel.retryCreateManualYarnCard())
             runCurrent()
             coVerify(exactly = 1) { yarnCardRepository.saveCard(any()) }
-            assertEquals(0L, viewModel.yarnSaveErrorId.value)
+            assertEquals(0L, viewModel.yarnSaveError.id.value)
         }
 
     @Test
@@ -554,7 +596,7 @@ class LibraryViewModelTest {
                 assertFalse(viewModel.retryCreateManualYarnCard())
                 assertFalse(viewModel.retryCreateManualYarnCard())
                 runCurrent()
-                assertEquals(0L, viewModel.yarnSaveErrorId.value)
+                assertEquals(0L, viewModel.yarnSaveError.id.value)
             }
             coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
         }
@@ -569,7 +611,7 @@ class LibraryViewModelTest {
             viewModel.deleteSelectedYarn()
             advanceUntilIdle()
 
-            assertEquals(1L, viewModel.yarnDeleteErrorId.value)
+            assertEquals(1L, viewModel.yarnDeleteError.id.value)
             assertFalse(viewModel.isYarnSelectMode.value)
             assertTrue(viewModel.selectedYarnIds.value.isEmpty())
 
@@ -579,7 +621,7 @@ class LibraryViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 2) { yarnCardRepository.deleteCards(listOf(3L)) }
-            assertEquals(1L, viewModel.yarnDeleteErrorId.value)
+            assertEquals(1L, viewModel.yarnDeleteError.id.value)
         }
 
     @Test
@@ -594,7 +636,7 @@ class LibraryViewModelTest {
 
             assertFalse(viewModel.isPhotoSelectMode.value)
             assertTrue(viewModel.selectedPhotoIds.value.isEmpty())
-            assertEquals(1L, viewModel.photoDeleteErrorId.value)
+            assertEquals(1L, viewModel.photoDeleteError.id.value)
         }
 
     @Test
@@ -607,7 +649,7 @@ class LibraryViewModelTest {
             viewModel.deletePhoto(photo)
             advanceUntilIdle()
 
-            assertEquals(1L, viewModel.photoDeleteErrorId.value)
+            assertEquals(1L, viewModel.photoDeleteError.id.value)
         }
 
     @Test

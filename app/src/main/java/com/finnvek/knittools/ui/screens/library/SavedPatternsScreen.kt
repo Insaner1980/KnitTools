@@ -29,14 +29,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -88,6 +85,7 @@ data class SavedPatternsActions(
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
     val onBack: () -> Unit,
+    val deliverDeleteError: LibraryErrorDelivery,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,7 +96,6 @@ fun SavedPatternsScreen(
 ) {
     val listState = rememberLazyListState()
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
-    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
 
@@ -106,12 +103,7 @@ fun SavedPatternsScreen(
         actions.onExitSelectMode()
     }
 
-    LaunchedEffect(state.deleteErrorId) {
-        if (state.deleteErrorId > lastHandledDeleteErrorId) {
-            lastHandledDeleteErrorId = state.deleteErrorId
-            snackbarHostState.showSnackbar(deleteFailedMessage)
-        }
-    }
+    LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError, snackbarHostState, deleteFailedMessage)
 
     if (showDeleteConfirmDialog) {
         SavedPatternsDeleteDialog(
@@ -137,7 +129,7 @@ fun SavedPatternsScreen(
                 onBack = actions.onBack,
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { LibrarySnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             if (!state.isSelectMode && state.patterns.isNotEmpty()) {
                 // Sama pilleri kuin New Project ja Add Yarn: teksti + kolmiulotteinen plus.

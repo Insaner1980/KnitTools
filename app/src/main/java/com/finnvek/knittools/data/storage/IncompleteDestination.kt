@@ -58,22 +58,34 @@ internal object IncompleteDestination {
         destination: Uri,
     ) {
         val resolver = context.contentResolver
-        when {
-            destination.scheme == "file" -> {
-                val partialFile = destination.path?.let(::File) ?: return
-                if (!partialFile.delete() && partialFile.exists()) {
-                    throw IOException("Could not remove incomplete destination")
+        val failureMessage =
+            when {
+                destination.scheme == "file" -> {
+                    val partialFile = destination.path?.let(::File) ?: return
+                    if (partialFile.delete() || !partialFile.exists()) {
+                        null
+                    } else {
+                        "Could not remove incomplete destination"
+                    }
+                }
+
+                DocumentsContract.isDocumentUri(context, destination) -> {
+                    if (DocumentsContract.deleteDocument(resolver, destination)) {
+                        null
+                    } else {
+                        "Document provider did not remove the incomplete destination"
+                    }
+                }
+
+                else -> {
+                    if (resolver.delete(destination, null, null) != 0) {
+                        null
+                    } else {
+                        "Content provider did not remove the incomplete destination"
+                    }
                 }
             }
-
-            DocumentsContract.isDocumentUri(context, destination) -> {
-                DocumentsContract.deleteDocument(resolver, destination)
-            }
-
-            else -> {
-                resolver.delete(destination, null, null)
-            }
-        }
+        if (failureMessage != null) throw IOException(failureMessage)
     }
 
     fun deleteQuietly(

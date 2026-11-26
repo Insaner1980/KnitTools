@@ -42,10 +42,9 @@ internal data class CounterSessionUndo(
         return if (active.recoveryReason == ActiveSessionRecoveryReason.LONG_RUNNING.name) {
             active.copy(
                 pendingRowsWorked =
-                    (pendingRowsWorked.toLong() + unreviewedRowsWorked)
-                        .coerceAtMost(
-                            Int.MAX_VALUE.toLong(),
-                        ).toInt(),
+                    (trustedRowsWorked.toLong() + pendingRowsWorked)
+                        .coerceIn(0L, Int.MAX_VALUE.toLong())
+                        .toInt() - reviewedRowsWorked,
             )
         } else {
             active.copy(
@@ -77,7 +76,11 @@ internal data class CounterSessionUndo(
                 require(it.recoveryIntervalToken == null || it.recoveryIntervalToken.isNotBlank())
                 require(it.reviewedDurationBaselineSeconds >= 0L)
                 require(it.reviewedRowsWorked >= 0 && it.reviewedLastObservedRow >= 0 && it.trustedLastObservedRow >= 0)
-                require(it.trustedRowsWorked >= 0 && it.unreviewedRowsWorked >= 0 && it.pendingRowsWorked >= 0)
+                require(it.trustedRowsWorked >= 0)
+                require(
+                    it.unreviewedRowsWorked >= -it.reviewedRowsWorked &&
+                        it.pendingRowsWorked >= -it.trustedRowsWorked,
+                )
             }
 
         fun decodeOrNull(value: String): CounterSessionUndo? = runCatching { decode(value) }.getOrNull()

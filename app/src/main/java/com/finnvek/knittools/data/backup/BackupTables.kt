@@ -256,6 +256,7 @@ internal object BackupTables {
                 LEFT JOIN project_yarn_notes AS note ON note.id = usage.projectYarnNoteId
                 WHERE note.projectId != usage.projectId
                     OR usage.plannedMeters < 0 OR usage.allocatedMeters < 0 OR usage.usedMeters < 0
+                    OR usage.updatedAt = 9223372036854775807
                     OR (usage.metersPerSkein IS NULL) != (usage.gramsPerSkein IS NULL)
                     OR usage.metersPerSkein <= 0 OR usage.gramsPerSkein <= 0
                 LIMIT 1

@@ -4,12 +4,14 @@ import android.os.SystemClock
 import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.domain.calculator.PatternPageCoordinateTransform
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import org.junit.Assert.assertEquals
@@ -27,9 +29,11 @@ class PatternAnnotationInputPressureTest {
         val points = mutableListOf<NormalizedPatternPoint>()
         var commits = 0
         composeRule.setContent {
+            val pageSize = 200.dp
+            val pagePixels = with(LocalDensity.current) { pageSize.toPx() }
             PatternAnnotationInputOverlay(
                 activeTool = tool.value,
-                coordinateTransform = PatternPageCoordinateTransform(0f, 0f, 1_000f, 1_000f, scale = 1f),
+                coordinateTransform = PatternPageCoordinateTransform(0f, 0f, pagePixels, pagePixels, scale = 1f),
                 viewportScale = 1f,
                 pressureEnabled = tool.value == PatternAnnotationTool.PEN,
                 actions =
@@ -41,7 +45,7 @@ class PatternAnnotationInputPressureTest {
                         onEraseStroke = {},
                         onSelectAnnotation = {},
                     ),
-                modifier = Modifier.fillMaxSize().testTag("input"),
+                modifier = Modifier.size(pageSize).testTag("input"),
             )
         }
         for (next in listOf(PatternAnnotationTool.PEN, PatternAnnotationTool.HIGHLIGHTER, PatternAnnotationTool.PEN)) {

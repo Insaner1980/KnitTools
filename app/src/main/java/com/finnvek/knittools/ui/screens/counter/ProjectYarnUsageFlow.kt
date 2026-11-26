@@ -53,7 +53,7 @@ fun ProjectYarnUsageFlow(
     LaunchedEffect(projectId) { model.observe(projectId) }
     DisposableEffect(model) { onDispose { model.stopObserving() } }
     val returnToYarn: () -> Unit = {
-        if (!transitioning && !editor.busy) {
+        if (!transitioning && !model.editor.value.busy) {
             transitioning = true
             scope.launch {
                 try {
@@ -114,8 +114,8 @@ fun ProjectYarnUsageFlow(
                     onEdit = model::edit,
                     onUnit = model::unit,
                     onConversion = model::conversion,
-                    onSave = model::save,
-                    onDelete = model::delete,
+                    onSave = { if (!transitioning) model.save() },
+                    onDelete = { if (!transitioning) model.delete() },
                     onDismiss = returnToYarn,
                 ),
         )

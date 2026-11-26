@@ -202,6 +202,7 @@ class MainActivity : AppCompatActivity() {
         suppressPassiveTrialNotice = savedInstanceState?.getBoolean(STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE) == true
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
         splashScreen.setOnExitAnimationListener(::animateSplashExit)
+        (application as App).onIncomingPdfStateRestored(incomingPdfViewModel.pending.value?.localUri)
         startLaunchRequestInitialization(savedInstanceState)
         checkForInAppUpdate()
         setContent { MainActivityContent() }

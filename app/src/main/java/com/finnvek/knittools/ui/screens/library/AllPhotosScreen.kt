@@ -21,14 +21,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -76,6 +74,7 @@ data class AllPhotosActions(
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
     val onBack: () -> Unit,
+    val deliverDeleteError: LibraryErrorDelivery,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,7 +87,6 @@ fun AllPhotosScreen(
     var selectedProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
-    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val gridState = rememberLazyGridState()
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
@@ -114,12 +112,7 @@ fun AllPhotosScreen(
         actions.onExitSelectMode()
     }
 
-    LaunchedEffect(state.deleteErrorId) {
-        if (state.deleteErrorId > lastHandledDeleteErrorId) {
-            lastHandledDeleteErrorId = state.deleteErrorId
-            snackbarHostState.showSnackbar(deleteFailedMessage)
-        }
-    }
+    LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError, snackbarHostState, deleteFailedMessage)
 
     // PhotoViewer (vain normaalimoodissa)
     if (!state.isSelectMode) {
@@ -136,7 +129,7 @@ fun AllPhotosScreen(
     }
 
     // Vahvistusdialoogi batch-poistolle
-    if (showDeleteConfirmDialog) {
+    if (showDeleteConfirmDialog && state.selectedPhotoIds.isNotEmpty()) {
         AllPhotosDeleteDialog(
             selectedCount = state.selectedPhotoIds.size,
             onConfirm = {
@@ -145,6 +138,9 @@ fun AllPhotosScreen(
             },
             onDismiss = { showDeleteConfirmDialog = false },
         )
+    }
+    LaunchedEffect(state.selectedPhotoIds.isEmpty()) {
+        if (state.selectedPhotoIds.isEmpty()) showDeleteConfirmDialog = false
     }
 
     Scaffold(
@@ -159,7 +155,7 @@ fun AllPhotosScreen(
                 onBack = actions.onBack,
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { LibrarySnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             SelectModeDeleteBar(
                 visible = state.isSelectMode && state.selectedPhotoIds.isNotEmpty(),
@@ -320,8 +316,8 @@ private fun PhotoGridItem(
             Modifier
                 .combinedClickable(
                     onClick = onClick,
-                    onLongClick = onLongClick,
-                    onLongClickLabel = stringResource(R.string.select_photo),
+                    onLongClick = onLongClick.takeUnless { isSelectMode },
+                    onLongClickLabel = if (isSelectMode) null else stringResource(R.string.select_photo),
                 ).then(
                     if (isSelectMode) {
                         Modifier.semantics { selected = isSelected }

@@ -41,6 +41,14 @@ object InstructionParser {
     private const val ROWS = """(?:ROWS?|R)\b"""
     private const val LENGTH_UNIT = """(?:CM|IN(?:CH(?:ES)?)?)\b"""
     private const val PER_INCH = """(?:PER|/)\s*(?:INCH|IN)\b"""
+    private const val EVERY_NTH_CHANGE =
+        """\b(?<action>INCREASE|DECREASE|INC|DEC)\s+1\s*$STITCHES\s+""" +
+            """(?:(?:IN|ON)\s+)?EVERY\s+(?<every>$INTEGER)\w*\s+$STITCHES"""
+
+    private val everyNthWithTrailingCount =
+        Regex("""$EVERY_NTH_CHANGE.*?(?:ACROSS|OVER)\s+(?<total>$INTEGER)(?:\s*$STITCHES|(?=\s*(?:[,.;)]|$)))""")
+    private val everyNthWithLeadingCount =
+        Regex("""$NUMBER_START(?<total>$INTEGER)\s*$STITCHES\s*+[,;:]?\s*+$EVERY_NTH_CHANGE""")
     private val explicitGaugeBasis = Regex("""(?:\b(?:PER|OVER|TO|IN|ACROSS)\s+|[=/]\s*)($DECIMAL)\s*($LENGTH_UNIT)""")
     private val gaugeStitchesPattern = Regex("""$NUMBER_START($DECIMAL)\s*$STITCHES""")
     private val gaugeRowsPattern = Regex("""^\s*(?:AND|[,/&X])?\s*($DECIMAL)\s*$ROWS""")
@@ -150,25 +158,19 @@ object InstructionParser {
         "kotlin:S5843",
     ) // Fallback-parseri tunnistaa useita neuleohjeiden kirjoitusasuja yhdellä lausekkeella.
     private fun parseIncreaseDecrease(upper: String): ParsedInstruction? =
-        parseIncreaseEveryNth(upper)
+        parseIncreaseDecreaseEveryNth(upper)
             ?: parseIncreaseDecreaseAcross(upper)
             ?: parseIncreaseDecreaseToTarget(upper)
             ?: parseIncreaseDecreaseReverse(upper)
             ?: parseImplicitDecreaseEveryNth(upper)
 
-    private fun parseIncreaseEveryNth(upper: String): ParsedInstruction.IncreaseDecrease? {
-        val incEveryNth =
-            Regex(
-                """\b(?:INCREASE|INC)\s+1\s*$STITCHES\s+(?:IN|ON)\s+EVERY\s+($INTEGER)\w*\s+$STITCHES""" +
-                    """.*?(?:ACROSS|OVER)\s+($INTEGER)(?:\s*$STITCHES|(?=\s*(?:[,.;)]|$)))""",
-            )
-        // CPD-OFF: Erilliset kielioppisaannot pidetaan eksplisiittisina.
-        val match = incEveryNth.find(upper) ?: return null
-        val every = match.groupValues[1].toIntOrNull()
-        val total = match.groupValues[2].toIntOrNull()
+    private fun parseIncreaseDecreaseEveryNth(upper: String): ParsedInstruction.IncreaseDecrease? {
+        val match = everyNthWithTrailingCount.find(upper) ?: everyNthWithLeadingCount.find(upper) ?: return null
+        val every = match.groups["every"]?.value?.toIntOrNull()
+        val total = match.groups["total"]?.value?.toIntOrNull()
         if (every == null || total == null || every <= 0) return null
-        return ParsedInstruction.IncreaseDecrease(total, total / every, true)
-        // CPD-ON
+        val isIncrease = match.groups["action"]?.value?.startsWith("INC") == true
+        return ParsedInstruction.IncreaseDecrease(total, total / every, isIncrease)
     }
 
     private fun parseIncreaseDecreaseAcross(upper: String): ParsedInstruction.IncreaseDecrease? {

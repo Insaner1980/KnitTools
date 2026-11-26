@@ -59,6 +59,7 @@ import com.finnvek.knittools.repository.retryOnRepositoryReadFailure
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -272,7 +273,7 @@ class PatternAnnotationViewModel
                 }.onEach { annotations ->
                     interaction.update { state ->
                         val edit = state.textEdit
-                        if (edit != null &&
+                        if (edit != null && annotations.page == edit.annotation.page && !annotations.limitExceeded &&
                             (annotations.master + annotations.project).none { it.id == edit.annotation.id }
                         ) {
                             state.copy(textEdit = null)
@@ -923,29 +924,40 @@ class PatternAnnotationViewModel
             exportPhase = PatternPdfExportPhase.EXPORTING
             markExportStarted()
             exportJob =
-                viewModelScope.launch {
+                viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    var handedToExporter = false
                     runCatching {
                         val annotations = loadExportAnnotations(request.layerIds)
                         coroutineContext.ensureActive()
-                        if (!isCurrentExport(request)) return@launch
+                        if (!isCurrentExport(request)) throw CancellationException("PDF export context changed")
+                        val trackerHighlights = resolveExportTrackerHighlights(annotations, counterContext.value)
+                        handedToExporter = true
                         exporter.export(
                             sourceUri = request.context.sourceUri,
                             destinationUri = destinationUri,
                             annotations = annotations,
-                            trackerHighlights = resolveExportTrackerHighlights(annotations, counterContext.value),
+                            trackerHighlights = trackerHighlights,
                             style = style,
                         ) { progress ->
                             updateExportProgress(request, progress)
                         }
                         coroutineContext.ensureActive()
                     }.onSuccess {
-                        if (isCurrentExport(request)) {
-                            analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED)
-                            exportRequest = null
-                            interaction.update { it.copy(isExporting = false) }
+                        completeAnnotatedPdfExport(request)
+                    }.onFailure {
+                        if (!handedToExporter) {
+                            exporter.removeEmptyDestination(request.context.sourceUri, destinationUri)
                         }
-                    }.onFailure { handleExportFailure(request, it) }
+                        handleExportFailure(request, it)
+                    }
                 }
+        }
+
+        private fun completeAnnotatedPdfExport(request: PatternPdfExportRequest) {
+            if (!isCurrentExport(request)) return
+            analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED)
+            exportRequest = null
+            interaction.update { it.copy(isExporting = false) }
         }
 
         private fun updateExportProgress(

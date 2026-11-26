@@ -60,6 +60,7 @@ class NotesAuditBoundaryTest(
         Dispatchers.setMain(dispatcher)
         val repository = mockk<CounterRepository>()
         every { repository.observeProject(1) } returns project
+        coEvery { repository.getProject(1) } coAnswers { project.value }
         coEvery { repository.saveProjectNotes(any(), any(), any(), any()) } coAnswers {
             assertEquals(1L, arg<Long>(0))
             attempts++
@@ -183,10 +184,8 @@ class NotesAuditBoundaryTest(
         runCurrent()
         assertEquals("Newest", model.uiState.value.notes)
         advanceUntilIdle()
-        // The cancelled acknowledgement leaves Base as the editor base. Preserve both
-        // the durable unacknowledged block and newer typing under the repository merge contract.
-        assertEquals("Newest\n\n---\n\nDraft", project.value.notes)
-        assertEquals(listOf("Draft", "Newest\n\n---\n\nDraft"), commits)
+        assertEquals("Newest", project.value.notes)
+        assertEquals(listOf("Draft", "Newest"), commits)
         assertFalse(model.uiState.value.saveFailed)
     }
 

@@ -220,12 +220,13 @@ public fun com.finnvek.knittools.ui.components.CraftIllustration(imageRes: kotli
     - entrance: STABLE (class with no mutable properties)
 
 @Composable
-internal fun com.finnvek.knittools.ui.components.CraftTypeToggle(selected: com.finnvek.knittools.domain.model.CraftType, onSelect: kotlin.Function1<com.finnvek.knittools.domain.model.CraftType, kotlin.Unit>): kotlin.Unit
+internal fun com.finnvek.knittools.ui.components.CraftTypeToggle(selected: com.finnvek.knittools.domain.model.CraftType, onSelect: kotlin.Function1<com.finnvek.knittools.domain.model.CraftType, kotlin.Unit>, enabled: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - selected: STABLE (class with no mutable properties)
     - onSelect: STABLE (function type)
+    - enabled: STABLE (primitive type)
 
 @Composable
 public fun com.finnvek.knittools.ui.components.CrossStitchEmptyState(glyph: com.finnvek.knittools.ui.components.CrossStitchGlyph, message: kotlin.String, modifier: androidx.compose.ui.Modifier, title: kotlin.String?, action: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit
@@ -911,7 +912,7 @@ private fun com.finnvek.knittools.ui.components.SectionLabelText(text: kotlin.St
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-public fun com.finnvek.knittools.ui.components.SegmentedToggle(options: kotlin.collections.List<kotlin.String>, selectedIndex: kotlin.Int, onSelect: kotlin.Function1<kotlin.Int, kotlin.Unit>, modifier: androidx.compose.ui.Modifier, itemTestTagPrefix: kotlin.String?, surface: com.finnvek.knittools.ui.components.SegmentedToggleSurface, pendingIndex: kotlin.Int?, optionTrailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<kotlin.Int, kotlin.Unit>): kotlin.Unit
+public fun com.finnvek.knittools.ui.components.SegmentedToggle(options: kotlin.collections.List<kotlin.String>, selectedIndex: kotlin.Int, onSelect: kotlin.Function1<kotlin.Int, kotlin.Unit>, modifier: androidx.compose.ui.Modifier, itemTestTagPrefix: kotlin.String?, surface: com.finnvek.knittools.ui.components.SegmentedToggleSurface, pendingIndex: kotlin.Int?, enabled: kotlin.Boolean, optionTrailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<kotlin.Int, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -922,10 +923,11 @@ public fun com.finnvek.knittools.ui.components.SegmentedToggle(options: kotlin.c
     - itemTestTagPrefix: STABLE (class with no mutable properties)
     - surface: STABLE (class with no mutable properties)
     - pendingIndex: STABLE (class with no mutable properties)
+    - enabled: STABLE (primitive type)
     - optionTrailingContent: STABLE (composable function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.components.SegmentedToggleGrid(options: kotlin.collections.List<kotlin.String>, selectedIndex: kotlin.Int, pendingIndex: kotlin.Int?, onSelect: kotlin.Function1<kotlin.Int, kotlin.Unit>, itemShape: androidx.compose.ui.graphics.Shape, itemTestTagPrefix: kotlin.String?, optionTrailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<kotlin.Int, kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.components.SegmentedToggleGrid(options: kotlin.collections.List<kotlin.String>, selectedIndex: kotlin.Int, pendingIndex: kotlin.Int?, onSelect: kotlin.Function1<kotlin.Int, kotlin.Unit>, itemShape: androidx.compose.ui.graphics.Shape, itemTestTagPrefix: kotlin.String?, enabled: kotlin.Boolean, optionTrailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<kotlin.Int, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -935,10 +937,11 @@ private fun com.finnvek.knittools.ui.components.SegmentedToggleGrid(options: kot
     - onSelect: STABLE (function type)
     - itemShape: STABLE (marked @Stable or @Immutable)
     - itemTestTagPrefix: STABLE (class with no mutable properties)
+    - enabled: STABLE (primitive type)
     - optionTrailingContent: STABLE (composable function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.components.SegmentedToggleGridRow(options: kotlin.collections.List<kotlin.String>, rowStart: kotlin.Int, selectedIndex: kotlin.Int, pendingIndex: kotlin.Int?, onSelect: kotlin.Function1<kotlin.Int, kotlin.Unit>, itemShape: androidx.compose.ui.graphics.Shape, itemTestTagPrefix: kotlin.String?, optionTrailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<kotlin.Int, kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.components.SegmentedToggleGridRow(options: kotlin.collections.List<kotlin.String>, rowStart: kotlin.Int, selectedIndex: kotlin.Int, pendingIndex: kotlin.Int?, onSelect: kotlin.Function1<kotlin.Int, kotlin.Unit>, itemShape: androidx.compose.ui.graphics.Shape, itemTestTagPrefix: kotlin.String?, enabled: kotlin.Boolean, optionTrailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<kotlin.Int, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -949,10 +952,11 @@ private fun com.finnvek.knittools.ui.components.SegmentedToggleGridRow(options: 
     - onSelect: STABLE (function type)
     - itemShape: STABLE (marked @Stable or @Immutable)
     - itemTestTagPrefix: STABLE (class with no mutable properties)
+    - enabled: STABLE (primitive type)
     - optionTrailingContent: STABLE (composable function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.components.SegmentedToggleItem(label: kotlin.String, isSelected: kotlin.Boolean, isPending: kotlin.Boolean, onClick: kotlin.Function0<kotlin.Unit>, shape: androidx.compose.ui.graphics.Shape, modifier: androidx.compose.ui.Modifier, trailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, stackTrailing: kotlin.Boolean): kotlin.Unit
+private fun com.finnvek.knittools.ui.components.SegmentedToggleItem(label: kotlin.String, isSelected: kotlin.Boolean, isPending: kotlin.Boolean, onClick: kotlin.Function0<kotlin.Unit>, shape: androidx.compose.ui.graphics.Shape, modifier: androidx.compose.ui.Modifier, enabled: kotlin.Boolean, trailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, stackTrailing: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -962,6 +966,7 @@ private fun com.finnvek.knittools.ui.components.SegmentedToggleItem(label: kotli
     - onClick: STABLE (function type)
     - shape: STABLE (marked @Stable or @Immutable)
     - modifier: STABLE (marked @Stable or @Immutable)
+    - enabled: STABLE (primitive type)
     - trailingContent: STABLE (composable function type)
     - stackTrailing: STABLE (primitive type)
 
@@ -975,7 +980,7 @@ private fun com.finnvek.knittools.ui.components.SegmentedToggleLabel(label: kotl
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-private fun com.finnvek.knittools.ui.components.SegmentedTogglePill(options: kotlin.collections.List<kotlin.String>, selectedIndex: kotlin.Int, pendingIndex: kotlin.Int?, onSelect: kotlin.Function1<kotlin.Int, kotlin.Unit>, itemShape: androidx.compose.ui.graphics.Shape, itemTestTagPrefix: kotlin.String?, optionTrailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<kotlin.Int, kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.components.SegmentedTogglePill(options: kotlin.collections.List<kotlin.String>, selectedIndex: kotlin.Int, pendingIndex: kotlin.Int?, onSelect: kotlin.Function1<kotlin.Int, kotlin.Unit>, itemShape: androidx.compose.ui.graphics.Shape, itemTestTagPrefix: kotlin.String?, enabled: kotlin.Boolean, optionTrailingContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<kotlin.Int, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -985,6 +990,7 @@ private fun com.finnvek.knittools.ui.components.SegmentedTogglePill(options: kot
     - onSelect: STABLE (function type)
     - itemShape: STABLE (marked @Stable or @Immutable)
     - itemTestTagPrefix: STABLE (class with no mutable properties)
+    - enabled: STABLE (primitive type)
     - optionTrailingContent: STABLE (composable function type)
 
 @Composable
@@ -2980,13 +2986,14 @@ private fun com.finnvek.knittools.ui.screens.gauge.ProjectContext(state: com.fin
     - state: RUNTIME (requires runtime check)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.gauge.SwatchFields(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>, axis: com.finnvek.knittools.ui.screens.gauge.GaugeAxis?): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.gauge.SwatchFields(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>, axis: com.finnvek.knittools.ui.screens.gauge.GaugeAxis?, showManualValues: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - state: RUNTIME (requires runtime check)
     - onAction: STABLE (function type)
     - axis: STABLE (class with no mutable properties)
+    - showManualValues: STABLE (primitive type)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.guide.GuideItemSection(item: com.finnvek.knittools.ui.screens.guide.GuideItem, proState: com.finnvek.knittools.pro.ProState?, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.guide.GuideAction, kotlin.Unit>): kotlin.Unit

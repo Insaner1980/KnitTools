@@ -63,8 +63,19 @@ class AppStartupSourceTest {
         // Jaettujen PDF-kopioiden siivous ei saa poistaa perehdytysluonnoksen PDF:ää.
         val onboardingPdfAssignment = "val onboardingPdf = onboardingStateRepository.get().draft.first()?.pdfUri"
         assertTrue(app.filterNot(Char::isWhitespace).contains(onboardingPdfAssignment.filterNot(Char::isWhitespace)))
-        assertTrue(app.contains("pruneUnreferencedStagedPdfs(keepUris = setOfNotNull(onboardingPdf))"))
+        val onboardingPdfKeep = "pruneUnreferencedStagedPdfs(keepUris=setOfNotNull(onboardingPdf"
+        assertTrue(app.filterNot(Char::isWhitespace).contains(onboardingPdfKeep))
         assertTrue(app.contains("Lankakuvien best-effort-siivous ei saa kaataa sovellusta."))
+    }
+
+    @Test
+    fun `startup PDF pruning keeps the restored share draft as well as the onboarding draft`() {
+        val app = ProjectSourceFiles.read(APP).filterNot(Char::isWhitespace)
+        val activity = ProjectSourceFiles.read(MAIN_ACTIVITY).filterNot(Char::isWhitespace)
+
+        assertTrue(activity.contains("onIncomingPdfStateRestored(incomingPdfViewModel.pending.value?.localUri)"))
+        val keptDrafts = "keepUris=setOfNotNull(onboardingPdf,pendingSharedPdfAtStartup.await())"
+        assertTrue(app.contains("pruneUnreferencedStagedPdfs($keptDrafts"))
     }
 
     @Test

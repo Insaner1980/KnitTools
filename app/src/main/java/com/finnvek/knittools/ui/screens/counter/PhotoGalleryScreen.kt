@@ -114,7 +114,7 @@ fun PhotoGalleryScreen(
     CollectWithLifecycleEffect({ errorsProvider() }) {
         snackbarHostState.showSnackbar(errorMessage)
     }
-    var creatingCapture by remember { mutableStateOf(false) }
+    var creatingCapture by remember(projectId) { mutableStateOf(false) }
     var captureHostActive by remember { mutableStateOf(true) }
     val currentProjectId by rememberUpdatedState(projectId)
     DisposableEffect(Unit) { onDispose { captureHostActive = false } }

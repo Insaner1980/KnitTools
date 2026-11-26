@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,6 +41,7 @@ fun RollingCounter(
     }
 
     Row(
+        horizontalArrangement = Arrangement.Absolute.Left,
         modifier =
             modifier.clearAndSetSemantics {
                 this.contentDescription = contentDescription

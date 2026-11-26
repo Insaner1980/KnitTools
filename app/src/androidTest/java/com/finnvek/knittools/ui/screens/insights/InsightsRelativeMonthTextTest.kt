@@ -7,7 +7,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.localizedTestContext
@@ -54,6 +56,7 @@ class InsightsRelativeMonthTextTest {
             }
         }
 
+        rule.onNodeWithText("Contador +12", useUnmergedTree = true).assertExists()
         listOf(
             30 to "hace 1 mes",
             59 to "hace 1 mes",
@@ -66,8 +69,7 @@ class InsightsRelativeMonthTextTest {
             29 to "hace 4 sem",
         ).forEach { (days, expected) ->
             rule.runOnIdle { daysAgo.intValue = days }
-            rule.onNodeWithText("Avance del contador: 12, $expected", useUnmergedTree = true).assertExists()
-            rule.onNodeWithText("Última vez $expected", useUnmergedTree = true).assertExists()
+            rule.onAllNodesWithText("Última vez $expected", useUnmergedTree = true).assertCountEquals(2)
         }
 
         assertEquals(

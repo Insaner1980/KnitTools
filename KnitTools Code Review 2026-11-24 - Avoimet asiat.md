@@ -24,24 +24,18 @@ Jätetty tietoisesti korjaamatta: perehdytyksen projektin nimeen kirjoitetut mer
 kopioinnin ajan (`OnboardingViewModel.edit` palaa, kun `busy` on tosi). Korjaus vaatisi luonnoksen
 kirjoitusjärjestyksen muuttamista, ja kopiointi on yleensä lyhyt.
 
-## 1. Ravelryn kassan tunnistus (vaatii Ravelry-tilin)
+## 1. Ravelryn kassan tunnistus (tehty 2026-11-25)
 
-`ui/screens/ravelry/RavelryLinks.kt`, `isRavelryPurchaseUrl` tunnistaa kassan vain näistä:
+Todennettu Pixel 9:llä oikealla tilillä ostamatta. WebView-debuggauksella kirjatut ostolomakkeet:
 
-- `checkout.`-aliverkkotunnus
-- `/checkout`-polkusegmentti
-- PayPal, Stripe ja Braintree
+- Buy now: `POST /stores/<kauppa>/products/<id>/checkout`
+- Add to cart: `POST /carts/<id>/checkout`
+- Send as gift: `POST /stores/<kauppa>/products/<id>/purchase_gift` (lisätty tunnistukseen)
 
-Jos Ravelryn osto onnistuu ilman näitä (tallennettu maksutapa, Ravelry-krediitit, `/cart`- tai
-`/purchase/...`-polku), ohjeen voi ostaa sovelluksen WebViewissä Google Playn maksujärjestelmän ohi.
-
-Tehtävä oikealla tilillä:
-
-1. Avaa maksullinen ohje Ravelryssä tavallisessa selaimessa ja kulje ostopolku loppuun asti ostamatta.
-2. Kirjaa jokainen osoite, jonka kautta polku kulkee (ostoskori, maksutavan valinta, vahvistus).
-3. Lisää puuttuvat osoitteet `isRavelryPurchaseUrl`-funktioon ja `RavelryLinksTest`-testeihin.
-
-Tämä kuuluu samaan Play-julkaisua edeltävään tarkistukseen kuin Ravelryn kirjallinen lupa.
+Kaikki kolme pysäytetään sovelluksessa. Käyttäjän selain avaa sivun, jolta osto alkoi, koska
+selaimessa ei ole sovelluksen kirjautumista ja kassaosoite näytti siellä virhe- tai kirjautumissivun.
+Ostoskorin ja kassan jälkeinen polku (`/carts/<id>`, `paypal.com/checkoutnow`) kulki selaimessa.
+Ravelryn kirjallinen lupa sovelluksen selaimelle pyydetään yhä ennen Play-julkaisua.
 
 ## 2. Laitetestit (ajamatta)
 

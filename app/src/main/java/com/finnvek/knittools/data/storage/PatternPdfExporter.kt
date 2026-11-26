@@ -8,6 +8,7 @@ import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -58,22 +59,49 @@ class PatternPdfExporter private constructor(
         trackerHighlights: Map<Long, ChartTrackerHighlight>,
         style: PatternAnnotationRenderStyle,
         onProgress: (PatternPdfExportProgress) -> Unit,
-    ) = withContext(ioDispatcher) {
-        requireDifferentDestination(sourceUri, destinationUri)
-        IncompleteDestination.writeWithCleanup(context, destinationUri) {
-            validateInputs(annotations, trackerHighlights)
-            val exportDirectory = File(context.cacheDir, EXPORT_TEMP_DIRECTORY).apply { mkdirs() }
-            if (!exportDirectory.isDirectory) throw IOException("Pattern PDF export cache is unavailable")
-            val tempFile = File.createTempFile(EXPORT_TEMP_PREFIX, EXPORT_TEMP_SUFFIX, exportDirectory)
-            try {
-                PdfPageRenderer(context, sourceUri).use { renderer ->
-                    val plan = planDocument(renderer)
-                    renderToTempFile(renderer, plan, tempFile, annotations, trackerHighlights, style, onProgress)
-                }
-                coroutineContext.ensureActive()
-                copyToDestination(tempFile, destinationUri)
-            } finally {
-                if (tempFile.exists() && !tempFile.delete()) tempFile.deleteOnExit()
+    ) = writeDestinationOnIo(sourceUri, destinationUri) {
+        validateInputs(annotations, trackerHighlights)
+        val exportDirectory = File(context.cacheDir, EXPORT_TEMP_DIRECTORY).apply { mkdirs() }
+        if (!exportDirectory.isDirectory) throw IOException("Pattern PDF export cache is unavailable")
+        val tempFile = File.createTempFile(EXPORT_TEMP_PREFIX, EXPORT_TEMP_SUFFIX, exportDirectory)
+        try {
+            PdfPageRenderer(context, sourceUri).use { renderer ->
+                val plan = planDocument(renderer)
+                renderToTempFile(renderer, plan, tempFile, annotations, trackerHighlights, style, onProgress)
+            }
+            coroutineContext.ensureActive()
+            copyToDestination(tempFile, destinationUri)
+        } finally {
+            if (tempFile.exists() && !tempFile.delete()) tempFile.deleteOnExit()
+        }
+    }
+
+    private suspend fun writeDestinationOnIo(
+        sourceUri: Uri,
+        destinationUri: Uri,
+        write: suspend () -> Unit,
+    ) {
+        var startedOnIo = false
+        try {
+            withContext(ioDispatcher) {
+                startedOnIo = true
+                requireDifferentDestination(sourceUri, destinationUri)
+                IncompleteDestination.writeWithCleanup(context, destinationUri, write)
+            }
+        } finally {
+            if (!startedOnIo) removeEmptyDestination(sourceUri, destinationUri)
+        }
+    }
+
+    internal suspend fun removeEmptyDestination(
+        sourceUri: Uri,
+        destinationUri: Uri,
+    ) = withContext(NonCancellable) {
+        withContext(ioDispatcher) {
+            if (runCatching { requireDifferentDestination(sourceUri, destinationUri) }.isSuccess &&
+                IncompleteDestination.isEmpty(context, destinationUri)
+            ) {
+                IncompleteDestination.deleteQuietly(context, destinationUri)
             }
         }
     }

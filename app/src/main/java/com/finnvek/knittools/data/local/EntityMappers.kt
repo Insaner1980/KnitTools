@@ -52,7 +52,7 @@ private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity
         count = entity.count.coerceAtLeast(0),
         mainCounterCustomLabel = sanitizeMainCounterCustomLabel(entity.mainCounterCustomLabel),
         readingLineEnabled = entity.readingLineEnabled,
-        readingLineYFraction = entity.readingLineYFraction.coerceIn(0f, 1f),
+        readingLineYFraction = sanitizeReadingLineYFraction(entity.readingLineYFraction),
         readingLineFollowCurrentRow = entity.readingLineFollowCurrentRow,
         verticalReadingGuideEnabled = entity.verticalReadingGuideEnabled,
         verticalReadingGuideXFraction = sanitizeReadingGuideFraction(entity.verticalReadingGuideXFraction),

@@ -45,9 +45,9 @@ fun SessionItem(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
-                    // "Rows 18 → 18" luki virheenä. Ilman edistystä riittää yksi rivinumero.
+                    // A single row number is enough when the counter did not change.
                     text =
-                        if (endRow > startRow) {
+                        if (endRow != startRow) {
                             stringResource(R.string.session_row_range, startRow, endRow)
                         } else {
                             stringResource(R.string.session_row_single, startRow)

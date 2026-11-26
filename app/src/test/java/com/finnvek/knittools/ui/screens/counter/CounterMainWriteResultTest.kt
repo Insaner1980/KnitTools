@@ -4,14 +4,18 @@ import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.MainCounterChange
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.repository.RecoveryResolutionResult
 import com.finnvek.knittools.repository.StopSessionResult
+import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
@@ -114,6 +118,62 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
 
             assertEquals(listOf(1, 1), summaries)
             assertEquals(listOf(false, false), prompts)
+        }
+
+    @Test
+    fun `stale stop summary is refreshed after the widget changes the session rows`() =
+        runTest {
+            val original = activeSession().copy(projectId = 7L)
+            val active = MutableStateFlow(original)
+            val (viewModel, reply) = beginPendingStop(active)
+            active.value = original.copy(trustedRowsWorked = 1, trustedLastObservedRow = 1)
+            runCurrent()
+            reply.complete(StopSessionResult.StaleAction)
+            advanceUntilIdle()
+
+            val summary = viewModel.uiState.value.sessionStopSummary
+            assertEquals(original.sessionToken, summary?.sessionToken)
+            assertEquals(1, summary?.rowsWorked)
+            assertEquals(1, summary?.endRow)
+        }
+
+    @Test
+    fun `project session total updates when history deletes one of two sessions`() =
+        runTest {
+            val sessions = MutableSharedFlow<Boolean>(replay = 1)
+            sessions.emit(true)
+            every { repository.observeHasSessionsForProject(7L) } returns sessions
+            var totalMinutes = 50
+            coEvery { repository.getTotalMinutesForProject(7L) } answers { totalMinutes }
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            assertEquals(50, viewModel.uiState.value.totalSessionMinutes)
+
+            totalMinutes = 30
+            sessions.emit(true)
+            advanceUntilIdle()
+
+            assertEquals(30, viewModel.uiState.value.totalSessionMinutes)
+        }
+
+    @Test
+    fun `editing a linked yarn refreshes its project summary without changing the project`() =
+        runTest {
+            val project = observedProject.value.copy(yarnCardIds = "31")
+            observedProject.value = project
+            every { repository.getActiveProjects() } returns flowOf(listOf(project))
+            val yarn = YarnCard(id = 31L, yarnName = "Original", colorName = "Red", linkedProjectId = 7L)
+            val cards = MutableStateFlow(listOf(yarn))
+            val yarnRepository = mockk<YarnCardRepository>()
+            coEvery { yarnRepository.getCards(listOf(31L)) } answers { cards.value }
+            val viewModel = viewModel(yarnRepositoryOverride = yarnRepository, savedYarnCardRows = cards)
+            advanceUntilIdle()
+            assertEquals(listOf(LinkedYarnSummary(31L, "Original", "Red")), viewModel.uiState.value.linkedYarns)
+
+            cards.value = listOf(yarn.copy(yarnName = "Renamed", colorName = "Blue"))
+            advanceUntilIdle()
+
+            assertEquals(listOf(LinkedYarnSummary(31L, "Renamed", "Blue")), viewModel.uiState.value.linkedYarns)
         }
 
     @Test

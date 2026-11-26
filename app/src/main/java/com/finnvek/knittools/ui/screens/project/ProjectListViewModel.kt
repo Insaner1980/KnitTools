@@ -895,6 +895,7 @@ private fun observeProjectListContent(
                 val (sessionRefreshed, hasAnyProject, onboarding) = readiness
                 val (welcomeDismissed, showBackupNotice) = onboarding
                 val waitingForFolders = folders.isLoading && filter != ProjectFolderFilter.AllProjects
+                val completedIds = buildSet(completed.size) { completed.forEach { add(it.id) } }
                 ProjectListContent(
                     isLoading = waitingForFolders || !sessionRefreshed,
                     hasAnyProject = hasAnyProject,
@@ -902,7 +903,7 @@ private fun observeProjectListContent(
                     welcomeDismissed = welcomeDismissed,
                     showBackupNotice = showBackupNotice,
                     preferences = prefs,
-                    active = filterProjects(active, folders, filter),
+                    active = filterProjects(active.filterNot { it.id in completedIds }, folders, filter),
                     completed = filterProjects(completed, folders, filter),
                     activeSession = session,
                 )

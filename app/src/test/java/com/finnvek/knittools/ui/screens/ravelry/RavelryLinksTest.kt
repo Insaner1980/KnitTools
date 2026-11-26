@@ -74,6 +74,7 @@ class RavelryLinksTest {
     fun `ravelry checkout and payment providers open outside the app`() {
         assertTrue(isRavelryPurchaseUrl("www.ravelry.com", "/stores/dreareneeknits/products/450988/checkout"))
         assertTrue(isRavelryPurchaseUrl("www.ravelry.com", "/carts/123/checkout"))
+        assertTrue(isRavelryPurchaseUrl("www.ravelry.com", "/stores/shop/products/1114520/purchase_gift"))
         assertTrue(isRavelryPurchaseUrl("checkout.ravelry.com", "/"))
         assertTrue(isRavelryPurchaseUrl("www.paypal.com", "/checkoutnow"))
         assertTrue(isRavelryPurchaseUrl("checkout.stripe.com", "/pay/cs_test"))
@@ -96,6 +97,8 @@ class RavelryLinksTest {
         assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/patterns/library/the-shift"))
         assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/patterns/library/819716/buy"))
         assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/carts"))
+        // Lahjan esikatselu on vielä lomakkeen täyttöä; vasta purchase_gift ostaa.
+        assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/stores/shop/products/1114520/preview_gift"))
         assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/patterns/library/checkout-cowl"))
         assertFalse(isRavelryPurchaseUrl("notpaypal.com.evil.example", "/"))
         assertFalse(isRavelryPurchaseUrl(null, "/checkout"))

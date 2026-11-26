@@ -56,6 +56,7 @@ fun SegmentedToggle(
     itemTestTagPrefix: String? = null,
     surface: SegmentedToggleSurface = SegmentedToggleSurface.Default,
     pendingIndex: Int? = null,
+    enabled: Boolean = true,
     optionTrailingContent: @Composable (Int) -> Unit = {},
 ) {
     val isGrid = options.size > 3
@@ -91,6 +92,7 @@ fun SegmentedToggle(
                     onSelect = onSelect,
                     itemShape = itemShape,
                     itemTestTagPrefix = itemTestTagPrefix,
+                    enabled = enabled,
                     optionTrailingContent = optionTrailingContent,
                 )
             } else {
@@ -101,6 +103,7 @@ fun SegmentedToggle(
                     onSelect = onSelect,
                     itemShape = itemShape,
                     itemTestTagPrefix = itemTestTagPrefix,
+                    enabled = enabled,
                     optionTrailingContent = optionTrailingContent,
                 )
             }
@@ -116,6 +119,7 @@ private fun SegmentedToggleGrid(
     onSelect: (Int) -> Unit,
     itemShape: Shape,
     itemTestTagPrefix: String?,
+    enabled: Boolean,
     optionTrailingContent: @Composable (Int) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing)) {
@@ -128,6 +132,7 @@ private fun SegmentedToggleGrid(
                 onSelect = onSelect,
                 itemShape = itemShape,
                 itemTestTagPrefix = itemTestTagPrefix,
+                enabled = enabled,
                 optionTrailingContent = optionTrailingContent,
             )
         }
@@ -143,6 +148,7 @@ private fun SegmentedToggleGridRow(
     onSelect: (Int) -> Unit,
     itemShape: Shape,
     itemTestTagPrefix: String?,
+    enabled: Boolean,
     optionTrailingContent: @Composable (Int) -> Unit,
 ) {
     // Saman rivin vaihtoehdot ovat yhtä korkeita, vaikka toisessa on merkki nimen alla.
@@ -159,6 +165,7 @@ private fun SegmentedToggleGridRow(
                 onClick = { onSelect(index) },
                 shape = itemShape,
                 modifier = Modifier.weight(1f).fillMaxHeight().itemTestTag(itemTestTagPrefix, index),
+                enabled = enabled,
                 trailingContent = { optionTrailingContent(index) },
                 stackTrailing = true,
             )
@@ -175,6 +182,7 @@ private fun SegmentedTogglePill(
     onSelect: (Int) -> Unit,
     itemShape: Shape,
     itemTestTagPrefix: String?,
+    enabled: Boolean,
     optionTrailingContent: @Composable (Int) -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -186,6 +194,7 @@ private fun SegmentedTogglePill(
                 onClick = { onSelect(index) },
                 shape = itemShape,
                 modifier = Modifier.weight(1f).itemTestTag(itemTestTagPrefix, index),
+                enabled = enabled,
                 trailingContent = { optionTrailingContent(index) },
             )
         }
@@ -200,6 +209,7 @@ private fun SegmentedToggleItem(
     onClick: () -> Unit,
     shape: Shape,
     modifier: Modifier = Modifier,
+    enabled: Boolean,
     trailingContent: @Composable () -> Unit,
     // Ruudukossa merkki (esim. PRO tai TRIAL) on nimen alla: rinnalla se kavensi nimen kahdelle riville.
     stackTrailing: Boolean = false,
@@ -227,6 +237,7 @@ private fun SegmentedToggleItem(
             .then(selectionAppearance)
             .selectable(
                 selected = isSelected,
+                enabled = enabled,
                 onClick = onClick,
                 role = Role.RadioButton,
             )

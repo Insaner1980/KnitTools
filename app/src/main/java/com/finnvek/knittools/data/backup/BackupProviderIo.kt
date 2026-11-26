@@ -157,7 +157,11 @@ internal class ContentResolverBackupProviderIo internal constructor(
                     }.exceptionOrNull()?.let(deadline::classify)
                 val closeFailure =
                     runCatching {
-                        handle?.let { deadline.call { it.close() } }
+                        handle?.let {
+                            deadline.call {
+                                if (failure == null) it.close() else it.closeWithError()
+                            }
+                        }
                     }.exceptionOrNull()?.let(deadline::classify)
                 if (closeFailure != null && closeFailure !== failure) {
                     failure?.addSuppressed(closeFailure) ?: run { failure = closeFailure }
@@ -255,6 +259,8 @@ internal interface BackupProviderHandle : Closeable {
     fun outputStream(): OutputStream
 
     fun checkError() = Unit
+
+    fun closeWithError() = close()
 }
 
 private class AndroidBackupProviderEndpoint(
@@ -279,7 +285,7 @@ private class AndroidBackupProviderRequest(
         val opened = resolver.openFileDescriptor(uri, mode, signal) ?: return null
         descriptor.set(opened)
         if (cancelled.get()) {
-            opened.close()
+            opened.closeWithError("Backup transfer cancelled")
             throw CancellationException("Provider operation was cancelled")
         }
         return AndroidBackupProviderHandle(opened)
@@ -293,7 +299,7 @@ private class AndroidBackupProviderRequest(
     override fun closeDescriptor() {
         cancelled.set(true)
         try {
-            descriptor.get()?.close()
+            descriptor.get()?.closeWithError("Backup transfer stopped")
         } catch (_: IOException) {
             // Sulkemisen tarkoitus on vapauttaa blokkaava provider-kutsu; alkuperäinen virhe säilyy.
         }
@@ -309,6 +315,8 @@ private class AndroidBackupProviderHandle(
     override fun outputStream(): OutputStream = ParcelFileDescriptor.AutoCloseOutputStream(descriptor)
 
     override fun checkError() = descriptor.checkError()
+
+    override fun closeWithError() = descriptor.closeWithError("Backup transfer failed")
 }
 
 private class ProviderNoProgressException(
@@ -390,11 +398,19 @@ internal class ProviderDeadline(
         scheduled = scheduler.schedule({ expire(generation) }, delay, TimeUnit.NANOSECONDS)
     }
 
-    @Synchronized
     private fun pause() {
-        deadlineGeneration++
-        scheduled?.cancel(false)
-        scheduled = null
+        val expiredGeneration =
+            synchronized(this) {
+                if (scheduled == null) return
+                if (deadlineNanos - nanoTime() > 0L) {
+                    deadlineGeneration++
+                    scheduled?.cancel(false)
+                    scheduled = null
+                    return
+                }
+                deadlineGeneration
+            }
+        expire(expiredGeneration)
     }
 
     private fun expire(generation: Long) {

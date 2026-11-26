@@ -302,8 +302,10 @@ fun KnitToolsNavHost(
         actions.onWidgetProPromptLaunchHandled()
     }
 
+    var editorOpeningShareRequestId by rememberSaveable { mutableStateOf<Long?>(null) }
     LaunchedEffect(currentPatternShareImport?.requestId, currentRoute) {
         val request = currentPatternShareImport ?: return@LaunchedEffect
+        if (currentRoute == null || currentRoute == Screen.WebPatternEditor.ROUTE) return@LaunchedEffect
         when (val payload = request.payload) {
             is PatternSharePayload.Ravelry -> {
                 navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(payload.url, request.requestId))
@@ -313,11 +315,8 @@ fun KnitToolsNavHost(
             is PatternSharePayload.WebLink,
             is PatternSharePayload.Error,
             -> {
-                if (currentRoute != Screen.WebPatternEditor.ROUTE) {
-                    navController.navigateSingleTopTo(
-                        Screen.WebPatternEditor.createRoute(WebPatternEditorOrigin.Share),
-                    )
-                }
+                editorOpeningShareRequestId = request.requestId
+                navController.navigateSingleTopTo(Screen.WebPatternEditor.createRoute(WebPatternEditorOrigin.Share))
             }
         }
     }
@@ -430,66 +429,18 @@ fun KnitToolsNavHost(
                         onJourneyAction = onJourneyAction,
                     )
                 }
-                // Dialogikohde: editori on lisäyssheet, ja edellinen näkymä jää näkyviin sen taakse.
-                dialog(
-                    route = Screen.WebPatternEditor.ROUTE,
-                    dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
-                    arguments =
-                        listOf(
-                            navArgument(Screen.WebPatternEditor.ARG_ORIGIN) {
-                                type = NavType.StringType
-                                defaultValue = WebPatternEditorOrigin.Manual.persistedValue
-                            },
-                            navArgument(Screen.WebPatternEditor.ARG_PROJECT_ID) {
-                                type = NavType.LongType
-                                defaultValue = -1L
-                            },
-                            navArgument(Screen.WebPatternEditor.ARG_PATTERN_ID) {
-                                type = NavType.LongType
-                                defaultValue = -1L
-                            },
-                        ),
-                ) { entry ->
-                    FormSheetDialogHost()
-                    WebPatternEditorScreen(
-                        request = currentPatternShareImport,
-                        onRequestStored = actions.onPatternShareImportHandled,
-                        onBack = { navController.popBackStack() },
-                        onOpenDetail = { savedPatternId ->
-                            navController.navigateToTopLevel(TopLevelDestination.Library)
-                            navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
-                        },
-                        onOpenProject = navController::openProjectOverview,
-                        onOpenRavelry = { url ->
-                            navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(url))
-                        },
-                        onStartupReady = { destinationReady(entry, it) },
-                    )
-                }
+                webPatternEditorDestination(
+                    navController = navController,
+                    currentShareRequest = { currentPatternShareImport },
+                    openingShareRequestId = { editorOpeningShareRequestId },
+                    onRequestHandled = actions.onPatternShareImportHandled,
+                    destinationReady = destinationReady,
+                )
             }
         }
     }
 
-    incomingPdfHost { outcome ->
-        when (outcome) {
-            is IncomingPdfOutcome.OpenProject -> {
-                navController.openProjectOverview(outcome.projectId)
-            }
-
-            is IncomingPdfOutcome.OpenSavedPattern -> {
-                navController.navigateToTopLevel(TopLevelDestination.Library)
-                navController.navigateSingleTopTo(Screen.SavedPatternDetail(outcome.savedPatternId).route)
-            }
-
-            IncomingPdfOutcome.OpenFailed,
-            IncomingPdfOutcome.SaveFailed,
-            IncomingPdfOutcome.Downloading,
-            IncomingPdfOutcome.NotPdf,
-            -> {
-                Unit
-            }
-        }
-    }
+    incomingPdfHost { outcome -> navController.openIncomingPdfOutcome(outcome) }
 
     if (showTrialJourney) {
         TrialJourneySheet(
@@ -511,6 +462,62 @@ fun KnitToolsNavHost(
                 showWidgetProPrompt = false
                 navController.navigateSingleTopTo(Screen.ProUpgrade.route)
             },
+        )
+    }
+}
+
+private fun NavGraphBuilder.webPatternEditorDestination(
+    navController: NavHostController,
+    currentShareRequest: () -> PatternShareImportRequest?,
+    openingShareRequestId: () -> Long?,
+    onRequestHandled: (Long) -> Unit,
+    destinationReady: (NavBackStackEntry, Boolean) -> Unit,
+) {
+    // Dialogikohde: editori on lisäyssheet, ja edellinen näkymä jää näkyviin sen taakse.
+    dialog(
+        route = Screen.WebPatternEditor.ROUTE,
+        dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+        arguments =
+            listOf(
+                navArgument(Screen.WebPatternEditor.ARG_ORIGIN) {
+                    type = NavType.StringType
+                    defaultValue = WebPatternEditorOrigin.Manual.persistedValue
+                },
+                navArgument(Screen.WebPatternEditor.ARG_PROJECT_ID) {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+                navArgument(Screen.WebPatternEditor.ARG_PATTERN_ID) {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+            ),
+    ) { entry ->
+        FormSheetDialogHost()
+        WebPatternEditorScreen(
+            request =
+                currentShareRequest()?.takeIf {
+                    navController.currentBackStackEntry?.id == entry.id && it.payload !is PatternSharePayload.Ravelry
+                },
+            onRequestStored = { requestId ->
+                if (navController.currentBackStackEntry?.id == entry.id) onRequestHandled(requestId)
+            },
+            onBack = {
+                val requestId = currentShareRequest()?.requestId
+                if (requestId != null && requestId == openingShareRequestId()) {
+                    onRequestHandled(requestId)
+                }
+                navController.popBackStack()
+            },
+            onOpenDetail = { savedPatternId ->
+                navController.navigateToTopLevel(TopLevelDestination.Library)
+                navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
+            },
+            onOpenProject = navController::openProjectOverview,
+            onOpenRavelry = { url ->
+                navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(url))
+            },
+            onStartupReady = { destinationReady(entry, it) },
         )
     }
 }
@@ -865,6 +872,7 @@ private fun NavGraphBuilder.librarySavedPatternsRoute(navController: NavHostCont
                     onToggleSelection = libraryViewModel::togglePatternSelection,
                     onSelectAll = libraryViewModel::selectAllPatterns,
                     onDeleteSelected = libraryViewModel::deleteSelectedPatterns,
+                    deliverDeleteError = libraryViewModel.patternDeleteError::deliver,
                     onExitSelectMode = libraryViewModel::exitPatternSelectMode,
                     onBack = { navController.popBackStack() },
                 ),
@@ -971,6 +979,7 @@ private fun SavedPatternDetailContent(
             navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(url))
         },
         deleteErrorId = patternDeleteErrorId,
+        deliverDeleteError = libraryViewModel.patternDeleteError::deliver,
     )
 }
 
@@ -1038,8 +1047,8 @@ private fun NavGraphBuilder.libraryMyYarnRoute(
         )
         val isYarnSelectMode by libraryViewModel.isYarnSelectMode.collectAsStateWithLifecycle()
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
-        val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId.collectAsStateWithLifecycle()
-        val yarnSaveErrorId by libraryViewModel.yarnSaveErrorId.collectAsStateWithLifecycle()
+        val yarnDeleteErrorId by libraryViewModel.yarnDeleteError.id.collectAsStateWithLifecycle()
+        val yarnSaveErrorId by libraryViewModel.yarnSaveError.id.collectAsStateWithLifecycle()
         val yarnSaveSuccessId by libraryViewModel.yarnSaveSuccessId.collectAsStateWithLifecycle()
         val isSavingYarnCard by libraryViewModel.isSavingYarnCard.collectAsStateWithLifecycle()
         val canUseYarnCards by libraryViewModel.canUseYarnCards.collectAsStateWithLifecycle()
@@ -1080,6 +1089,8 @@ private fun myYarnActions(
     },
     onCreateYarnCard = libraryViewModel::createManualYarnCard,
     onRetryCreateYarnCard = libraryViewModel::retryCreateManualYarnCard,
+    deliverDeleteError = libraryViewModel.yarnDeleteError::deliver,
+    deliverSaveError = libraryViewModel.yarnSaveError::deliver,
     onEnterSelectMode = libraryViewModel::enterYarnSelectMode,
     onToggleSelection = libraryViewModel::toggleYarnSelection,
     onSelectAll = libraryViewModel::selectAllYarn,
@@ -1195,7 +1206,7 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
         val projects by libraryViewModel.allProjects.collectAsStateWithLifecycle(initialValue = emptyList())
         val isPhotoSelectMode by libraryViewModel.isPhotoSelectMode.collectAsStateWithLifecycle()
         val selectedPhotoIds by libraryViewModel.selectedPhotoIds.collectAsStateWithLifecycle()
-        val photoDeleteErrorId by libraryViewModel.photoDeleteErrorId.collectAsStateWithLifecycle()
+        val photoDeleteErrorId by libraryViewModel.photoDeleteError.id.collectAsStateWithLifecycle()
         CompositionLocalProvider(LocalAdaptiveModalWindow provides true) {
             AllPhotosScreen(
                 state =
@@ -1210,6 +1221,7 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
                 actions =
                     AllPhotosActions(
                         onDeletePhoto = libraryViewModel::deletePhoto,
+                        deliverDeleteError = libraryViewModel.photoDeleteError::deliver,
                         onEnterSelectMode = libraryViewModel::enterPhotoSelectMode,
                         onToggleSelection = libraryViewModel::togglePhotoSelection,
                         onSelectAll = libraryViewModel::selectAllPhotos,
@@ -1299,12 +1311,6 @@ private fun NavGraphBuilder.settingsGraph(
             )
         }
         guideDestinations(navController, onLaunchCounter)
-    }
-}
-
-internal fun NavHostController.navigateSingleTopTo(route: String) {
-    navigate(route) {
-        launchSingleTop = true
     }
 }
 
@@ -1474,11 +1480,13 @@ private fun rememberRouteProjectReady(
     val currentEntry by navController.currentBackStackEntryAsState()
     var ready by remember(projectId) { mutableStateOf(false) }
     LaunchedEffect(projectId, state.projectId, currentEntry?.id) {
+        if (state.projectId == projectId) {
+            ready = true
+            return@LaunchedEffect
+        }
         if (currentEntry?.id != backStackEntryId) return@LaunchedEffect
         if (ready && state.projectId == null) {
             navController.returnToProjectList()
-        } else if (state.projectId == projectId) {
-            ready = true
         } else {
             ready = false
             viewModel.selectProjectByIdForLaunch(

@@ -29,6 +29,8 @@ class AuditPart13BoundaryTest {
 
             override fun getFilesDir() = File(directory, "files").apply { mkdirs() }
 
+            override fun getNoBackupFilesDir() = File(directory, "no-backup").apply { mkdirs() }
+
             override fun getSharedPreferences(
                 name: String,
                 mode: Int,
@@ -68,7 +70,7 @@ class AuditPart13BoundaryTest {
     }
 
     private fun preparedFiles(): Pair<BackupRestoreFiles, File> {
-        val payload = File(directory, UUID.randomUUID().toString()).apply { mkdirs() }
+        val payload = File(context.noBackupFilesDir, UUID.randomUUID().toString()).apply { mkdirs() }
         val old =
             File(context.filesDir, "pattern_pdfs/0/old.pdf").apply {
                 parentFile!!.mkdirs()

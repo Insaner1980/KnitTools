@@ -31,6 +31,8 @@ class PostHogConsentClient internal constructor(
 
     internal fun blockDelivery() = gate.blockDelivery()
 
+    internal fun cancelDelivery() = gate.retire()
+
     fun retire() {
         // close() can flush queued events, so retire delivery first.
         gate.retire()
@@ -87,7 +89,7 @@ internal class AnalyticsDeliveryGate : Interceptor {
         val calls =
             synchronized(lock) {
                 isRetired = true
-                inFlight.toList()
+                inFlight.toList().also { inFlight.clear() }
             }
         calls.forEach(Call::cancel)
     }

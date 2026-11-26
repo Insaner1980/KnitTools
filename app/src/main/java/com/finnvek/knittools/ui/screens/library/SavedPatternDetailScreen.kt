@@ -17,14 +17,12 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,6 +73,7 @@ fun SavedPatternDetailScreen(
     onOpenPattern: () -> Unit,
     onAttachToProject: (projectId: Long, onResult: (attached: Boolean) -> Unit) -> Unit,
     onRemove: () -> Unit,
+    deliverDeleteError: LibraryErrorDelivery,
     modifier: Modifier = Modifier,
     onOpenWebsite: ((String) -> ExternalWebLinkOpenResult)? = null,
     onOpenRavelry: (String) -> Unit = {},
@@ -92,7 +91,6 @@ fun SavedPatternDetailScreen(
     var showProjectPicker by rememberSaveable(pattern.id) { mutableStateOf(false) }
     val attachmentViewModel: SavedPatternAttachmentViewModel = viewModel(key = "web-attachment-${pattern.id}")
     val attachmentState by attachmentViewModel.state.collectAsStateWithLifecycle()
-    var lastHandledDeleteErrorId by rememberSaveable(pattern.id) { mutableLongStateOf(deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -145,12 +143,7 @@ fun SavedPatternDetailScreen(
         }
     }
 
-    LaunchedEffect(deleteErrorId) {
-        if (deleteErrorId > lastHandledDeleteErrorId) {
-            lastHandledDeleteErrorId = deleteErrorId
-            snackbarHostState.showSnackbar(deleteFailedMessage)
-        }
-    }
+    LibraryErrorSnackbarEffect(deleteErrorId, deliverDeleteError, snackbarHostState, deleteFailedMessage)
 
     if (showRemoveConfirmDialog) {
         ConfirmationDialog(
@@ -241,7 +234,7 @@ fun SavedPatternDetailScreen(
         title = pattern.name,
         onBack = onBack,
         modifier = modifier,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { LibrarySnackbarHost(hostState = snackbarHostState) },
         showTitle = scrollTitle.showTitle,
         actions = {
             SavedPatternDetailMenu(

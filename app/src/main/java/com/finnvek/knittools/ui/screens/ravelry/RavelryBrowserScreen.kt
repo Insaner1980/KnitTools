@@ -183,8 +183,12 @@ internal fun WebView.configureRavelryBrowser(
                         isRedirect = request.isRedirect,
                     )
                 when (navigation) {
-                    RavelryNavigation.Purchase -> openOutside(url.toString(), purchaseMessage)
+                    // Kassaosoite ei toimi selaimessa ilman sovelluksen kirjautumista (lahjaoston
+                    // uudelleenohjaus näytti virhesivun), joten selain avaa sivun, jolta osto alkoi.
+                    RavelryNavigation.Purchase -> openOutside(browserState.fallbackUrl, purchaseMessage)
+
                     RavelryNavigation.External -> openOutside(url.toString(), null)
+
                     RavelryNavigation.InApp, RavelryNavigation.Blocked -> Unit
                 }
                 return navigation != RavelryNavigation.InApp
@@ -193,43 +197,7 @@ internal fun WebView.configureRavelryBrowser(
             override fun shouldInterceptRequest(
                 view: WebView,
                 request: WebResourceRequest,
-            ): WebResourceResponse? {
-                if (!request.isForMainFrame) return null
-                val url = request.url
-                val navigation =
-                    ravelryNavigation(
-                        scheme = url.scheme,
-                        host = url.host,
-                        path = url.path,
-                        isMainFrame = true,
-                        isRedirect = request.isRedirect,
-                    )
-                if (navigation == RavelryNavigation.InApp) return null
-                // POST requests bypass shouldOverrideUrlLoading. Block without replaying the body
-                // as a GET or touching Compose/WebView state from the request worker thread.
-                if (navigation == RavelryNavigation.Purchase) {
-                    // Lomakkeella avattu kassa ei saa jättää tyhjää sivua: kerrotaan, että osto jatkuu
-                    // selaimessa, ja avataan kassaosoite (ilman lomakkeen sisältöä) pääsäikeessä.
-                    val target = url.toString()
-                    view.post { if (browserState.webView === view) openOutside(target, purchaseMessage) }
-                    return WebResourceResponse(
-                        "text/html",
-                        "UTF-8",
-                        403,
-                        "Forbidden",
-                        emptyMap(),
-                        ByteArrayInputStream(purchaseNoticePage(purchaseMessage).toByteArray(Charsets.UTF_8)),
-                    )
-                }
-                return WebResourceResponse(
-                    "text/plain",
-                    "UTF-8",
-                    403,
-                    "Forbidden",
-                    emptyMap(),
-                    ByteArrayInputStream(byteArrayOf()),
-                )
-            }
+            ): WebResourceResponse? = interceptRavelryRequest(view, request, browserState, openOutside, purchaseMessage)
 
             override fun onPageStarted(
                 view: WebView,
@@ -269,6 +237,52 @@ internal fun WebView.configureRavelryBrowser(
             )
         }
     }
+}
+
+private fun interceptRavelryRequest(
+    view: WebView,
+    request: WebResourceRequest,
+    browserState: RavelryBrowserState,
+    openOutside: (String, String?) -> Unit,
+    purchaseMessage: String,
+): WebResourceResponse? {
+    if (!request.isForMainFrame) return null
+    val url = request.url
+    val navigation =
+        ravelryNavigation(
+            scheme = url.scheme,
+            host = url.host,
+            path = url.path,
+            isMainFrame = true,
+            isRedirect = request.isRedirect,
+        )
+    if (navigation == RavelryNavigation.InApp) return null
+    // POST requests bypass shouldOverrideUrlLoading. Block without replaying the body
+    // as a GET or touching Compose/WebView state from the request worker thread.
+    if (navigation == RavelryNavigation.Purchase) {
+        // Lomakkeella avattu kassa ei saa jättää tyhjää sivua: kerrotaan, että osto jatkuu
+        // selaimessa. Kassaosoite ei toimi ilman lomaketta eikä selaimessa ole sovelluksen
+        // kirjautumista, joten selain avaa sivun, jolta ostoa yritettiin (laitetesti 2026-11-25).
+        view.post {
+            if (browserState.webView === view) openOutside(browserState.fallbackUrl, purchaseMessage)
+        }
+        return WebResourceResponse(
+            "text/html",
+            "UTF-8",
+            403,
+            "Forbidden",
+            emptyMap(),
+            ByteArrayInputStream(purchaseNoticePage(purchaseMessage).toByteArray(Charsets.UTF_8)),
+        )
+    }
+    return WebResourceResponse(
+        "text/plain",
+        "UTF-8",
+        403,
+        "Forbidden",
+        emptyMap(),
+        ByteArrayInputStream(byteArrayOf()),
+    )
 }
 
 private const val FULL_PROGRESS = 100

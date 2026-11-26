@@ -10,6 +10,7 @@ import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.repository.CancelledNotesMerge
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import com.finnvek.knittools.repository.mergeProjectNotes
@@ -18,6 +19,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,12 +67,14 @@ class NotesEditorViewModel
 
         private var saveJob: Job? = null
         private var activeWrite: NotesWrite? = null
+        private var interruptedWrite: InterruptedNotesWrite? = null
         private var draftWriteJob: Job? = null
         private val draftFileMutex = Mutex()
         private var persistedNotes: String = ""
         private var latestStoredNotes: String = ""
         private var notesObservationVersion = 0L
         private var hasLocalEdits: Boolean = false
+        private var restoredDraftNeedsReview = false
 
         init {
             viewModelScope.launch {
@@ -111,20 +115,19 @@ class NotesEditorViewModel
                     }
                     val restored =
                         if (!_uiState.value.isLoaded || !_uiState.value.canEditNotes) {
-                            restoreDraft(loadedProjectId)
+                            restoreDraft(loadedProjectId, project.notes)
                         } else {
                             null
                         }
                     val restoredDraft = restored?.notes
                     val hasRestoredDraft = restoredDraft != null && restoredDraft != project.notes
-                    if (restoredDraft == project.notes) {
+                    if (restoredDraft == project.notes && !restoredDraftNeedsReview) {
                         clearSavedDraft()
                     }
                     val shouldAdoptNotes =
                         hasRestoredDraft ||
                             !_uiState.value.isLoaded ||
-                            !hasLocalEdits ||
-                            _uiState.value.notes == persistedNotes
+                            !hasLocalEdits
                     if (shouldAdoptNotes) {
                         persistedNotes =
                             if (hasRestoredDraft) {
@@ -132,7 +135,7 @@ class NotesEditorViewModel
                             } else {
                                 project.notes
                             }
-                        hasLocalEdits = hasRestoredDraft
+                        hasLocalEdits = hasRestoredDraft || restoredDraftNeedsReview
                     }
                     _uiState.update { state ->
                         state.copy(
@@ -147,9 +150,10 @@ class NotesEditorViewModel
                             isLoaded = true,
                             canEditNotes = canEditNotes,
                             isMissingProject = false,
+                            saveFailed = state.saveFailed || restoredDraftNeedsReview,
                         )
                     }
-                    if (hasRestoredDraft) {
+                    if (hasRestoredDraft && !restoredDraftNeedsReview) {
                         if (savedStateHandle.contains(NOTES_DRAFT_KEY) &&
                             !fitsSavedState(restoredDraft.orEmpty(), persistedNotes)
                         ) {
@@ -165,8 +169,15 @@ class NotesEditorViewModel
             val loadedProjectId = projectId ?: return
             val state = _uiState.value
             if (state.isMissingProject || !state.isLoaded || !state.canEditNotes) return
+            restoredDraftNeedsReview = false
             _uiState.update { it.copy(notes = text, exitRequested = false) }
-            hasLocalEdits = text != persistedNotes
+            val job = saveJob
+            val write = activeWrite
+            val submittedNotes = write?.submittedNotes
+            if (job?.isActive == true && submittedNotes != null) {
+                interruptedWrite = InterruptedNotesWrite(job, submittedNotes, write)
+            }
+            hasLocalEdits = text != persistedNotes || interruptedWrite != null
             saveJob?.cancel()
             if (!hasLocalEdits) {
                 persistedNotes = latestStoredNotes
@@ -197,6 +208,7 @@ class NotesEditorViewModel
                 if (exitAfterSave) requestExit()
                 return
             }
+            restoredDraftNeedsReview = false
             val write = activeWrite
             if (write != null && saveJob?.isActive == true) {
                 if (exitAfterSave) write.exitAfterSave = true
@@ -227,8 +239,7 @@ class NotesEditorViewModel
                     id = loadedProjectId,
                     baseNotes = persistedNotes,
                     requestedNotes = requestedNotes,
-                    creationAuthorized =
-                        savedStateHandle.get<Boolean>(NOTES_CREATION_AUTHORIZED_KEY) == true,
+                    creationAuthorized = savedStateHandle.get<Boolean>(NOTES_CREATION_AUTHORIZED_KEY) == true,
                 )
             val savedProject =
                 when (result) {
@@ -255,6 +266,7 @@ class NotesEditorViewModel
                 saveReported = true
                 analytics.track(UsageEvent.NOTES_SAVED)
             }
+            if (interruptedWrite?.job === currentCoroutineContext()[Job]) interruptedWrite = null
             persistedNotes = savedProject.notes
             if (observationVersion == notesObservationVersion) latestStoredNotes = savedProject.notes
             if (savedProject.notesCreated) {
@@ -297,16 +309,70 @@ class NotesEditorViewModel
                     if (debounce) delay(DEBOUNCE_MS)
                     activeWrite = write
                     try {
-                        val saved = !hasLocalEdits || persistNotes(loadedProjectId, _uiState.value.notes)
+                        if (!reconcileInterruptedWrite(loadedProjectId)) return@launch
+                        val requestedNotes = _uiState.value.notes
+                        write.submittedNotes = requestedNotes
+                        val saved = !hasLocalEdits || persistNotes(loadedProjectId, requestedNotes)
                         if (saved && isActive && write.exitAfterSave) requestExit()
+                    } catch (cancelled: CancelledNotesMerge) {
+                        write.cancelledMerge = cancelled
+                        throw cancelled
                     } finally {
                         if (activeWrite === write) activeWrite = null
                     }
                 }
         }
 
+        private suspend fun reconcileInterruptedWrite(loadedProjectId: Long): Boolean {
+            val interrupted = interruptedWrite ?: return true
+            interrupted.job.join()
+            if (interruptedWrite !== interrupted) return true
+            val storedNotes =
+                readStoredNotes(loadedProjectId).getOrElse {
+                    _uiState.update { it.copy(saveFailed = true) }
+                    return false
+                }
+            interruptedWrite = null
+            if (storedNotes == null) {
+                _uiState.update { it.copy(isMissingProject = true) }
+                return false
+            }
+            val (base, requestedNotes) =
+                interrupted.reconcile(persistedNotes, _uiState.value.notes, storedNotes, latestStoredNotes)
+            persistedNotes = base
+            latestStoredNotes = storedNotes
+            _uiState.update { it.copy(notes = requestedNotes) }
+            hasLocalEdits = requestedNotes != persistedNotes
+            if (hasLocalEdits) {
+                saveDraft(requestedNotes, persistedNotes)
+            } else {
+                persistedNotes = storedNotes
+                clearSavedDraft()
+                _uiState.update { it.copy(notes = storedNotes, saveFailed = false) }
+            }
+            return true
+        }
+
+        private suspend fun readStoredNotes(loadedProjectId: Long): Result<String?> =
+            try {
+                var observationVersion: Long
+                var stored: String?
+                do {
+                    observationVersion = notesObservationVersion
+                    stored = repository.getProject(loadedProjectId)?.notes
+                    currentCoroutineContext().ensureActive()
+                } while (stored != null && observationVersion != notesObservationVersion && stored != latestStoredNotes)
+                Result.success(stored)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (expectedReadFailure: Exception) {
+                Result.failure(expectedReadFailure)
+            }
+
         fun discardChanges() {
+            restoredDraftNeedsReview = false
             saveJob?.cancel()
+            interruptedWrite = null
             persistedNotes = latestStoredNotes
             hasLocalEdits = false
             clearSavedDraft()
@@ -318,28 +384,48 @@ class NotesEditorViewModel
             baseNotes: String,
         ) {
             val loadedProjectId = projectId ?: return
-            if (fitsSavedState(notes, baseNotes)) {
-                clearDraftFile()
-                savedStateHandle[NOTES_DRAFT_KEY] = notes
-                savedStateHandle[NOTES_DRAFT_BASE_KEY] = baseNotes
-                return
-            }
-            val fileId = draftFileId() ?: UUID.randomUUID()
-            savedStateHandle[NOTES_DRAFT_FILE_ID_KEY] = fileId.toString()
+            val fileId = storeInlineOrGetDraftFileId(notes, baseNotes) ?: return
             draftWriteJob?.cancel()
-            draftWriteJob =
-                viewModelScope.launch {
-                    draftFileMutex.withLock {
-                        if (draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))) {
-                            ensureActive()
-                            savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
-                            savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
-                        }
-                    }
-                }
+            draftWriteJob = viewModelScope.launch { writeDraftFile(loadedProjectId, fileId, notes, baseNotes) }
         }
 
-        private suspend fun restoreDraft(loadedProjectId: Long): NotesDraft? {
+        private fun storeInlineOrGetDraftFileId(
+            notes: String,
+            baseNotes: String,
+        ): UUID? {
+            if (fitsSavedState(notes, baseNotes)) {
+                clearDraftFile()
+                savedStateHandle.remove<String>(NOTES_DRAFT_PATCH_KEY)
+                savedStateHandle[NOTES_DRAFT_KEY] = notes
+                savedStateHandle[NOTES_DRAFT_BASE_KEY] = baseNotes
+                return null
+            }
+            return draftFileId() ?: UUID.randomUUID().also { savedStateHandle[NOTES_DRAFT_FILE_ID_KEY] = it.toString() }
+        }
+
+        private suspend fun writeDraftFile(
+            loadedProjectId: Long,
+            fileId: UUID,
+            notes: String,
+            baseNotes: String,
+        ): Boolean =
+            draftFileMutex.withLock {
+                val written = draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))
+                currentCoroutineContext().ensureActive()
+                if (written) clearInlineDraft()
+                written
+            }
+
+        private suspend fun restoreDraft(
+            loadedProjectId: Long,
+            storedNotes: String,
+        ): NotesDraft? {
+            restoredDraftNeedsReview = false
+            val patch = savedStateHandle.get<String>(NOTES_DRAFT_PATCH_KEY)
+            if (patch != null) {
+                restoreNotesDraftPatch(patch, storedNotes)?.let { return it }
+                restoredDraftNeedsReview = true
+            }
             val diskDraft = draftFileId()?.let { draftStorage.read(loadedProjectId, it) }
             return diskDraft ?: savedStateHandle.get<String>(NOTES_DRAFT_KEY)?.let {
                 NotesDraft(it, savedStateHandle[NOTES_DRAFT_BASE_KEY])
@@ -361,9 +447,14 @@ class NotesEditorViewModel
             }
         }
 
-        private fun clearSavedDraft() {
+        private fun clearInlineDraft() {
             savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
             savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
+            savedStateHandle.remove<String>(NOTES_DRAFT_PATCH_KEY)
+        }
+
+        private fun clearSavedDraft() {
+            clearInlineDraft()
             clearDraftFile()
         }
 
@@ -371,6 +462,18 @@ class NotesEditorViewModel
             notes: String,
             baseNotes: String,
         ): Boolean = notes.length.toLong() + baseNotes.length <= MAX_INLINE_DRAFT_CHARS
+
+        private suspend fun retainFinalDraft(
+            loadedProjectId: Long,
+            notes: String,
+            baseNotes: String,
+        ) {
+            val fileId = storeInlineOrGetDraftFileId(notes, baseNotes) ?: return
+            if (!writeDraftFile(loadedProjectId, fileId, notes, baseNotes)) {
+                val patch = encodeNotesDraftPatch(baseNotes, notes, MAX_INLINE_DRAFT_CHARS)
+                savedStateHandle[NOTES_DRAFT_PATCH_KEY] = patch.orEmpty()
+            }
+        }
 
         override fun onCleared() {
             val state = _uiState.value
@@ -380,12 +483,31 @@ class NotesEditorViewModel
                     state.canEditNotes &&
                     !state.isMissingProject &&
                     hasLocalEdits
-            val notesToSave = state.notes
-            val baseNotes = persistedNotes
-            if (!shouldFlush) return
+            val draftBeforeClear = state.notes
+            if (!shouldFlush || restoredDraftNeedsReview) return
+            val baseBeforeClear = persistedNotes
+            val interrupted = interruptedWrite
+
             @Suppress("TooGenericExceptionCaught")
             applicationScope.launch {
                 try {
+                    val (baseNotes, notesToSave) =
+                        if (interrupted == null) {
+                            baseBeforeClear to draftBeforeClear
+                        } else {
+                            interrupted.job.join()
+                            val storedNotes =
+                                readStoredNotes(loadedProjectId).getOrElse {
+                                    retainFinalDraft(loadedProjectId, draftBeforeClear, baseBeforeClear)
+                                    return@launch
+                                } ?: return@launch
+                            interrupted.reconcile(baseBeforeClear, draftBeforeClear, storedNotes, latestStoredNotes)
+                        }
+                    if (notesToSave == baseNotes) {
+                        clearSavedDraft()
+                        return@launch
+                    }
+                    retainFinalDraft(loadedProjectId, notesToSave, baseNotes)
                     val result =
                         repository.saveProjectNotes(
                             id = loadedProjectId,
@@ -394,7 +516,7 @@ class NotesEditorViewModel
                             creationAuthorized =
                                 savedStateHandle.get<Boolean>(NOTES_CREATION_AUTHORIZED_KEY) == true,
                         )
-                    if (result is ProjectNotesSaveResult.Saved) clearDraftFile()
+                    if (result is ProjectNotesSaveResult.Saved) clearSavedDraft()
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
@@ -405,14 +527,39 @@ class NotesEditorViewModel
 
         private class NotesWrite(
             var exitAfterSave: Boolean,
+            var submittedNotes: String? = null,
+            var cancelledMerge: CancelledNotesMerge? = null,
         )
+
+        private data class InterruptedNotesWrite(
+            val job: Job,
+            val submittedNotes: String,
+            val write: NotesWrite,
+        ) {
+            fun reconcile(
+                base: String,
+                requested: String,
+                stored: String,
+                observed: String,
+            ): Pair<String, String> {
+                val merge = write.cancelledMerge
+                if (merge != null) {
+                    val current = if (stored == merge.mergedNotes) merge.previousNotes else stored
+                    val editBase = if (stored == submittedNotes) submittedNotes else base
+                    return stored to mergeProjectNotes(editBase, requested, current)
+                }
+                val previousWriteVisible = stored == submittedNotes || observed == submittedNotes
+                return (if (previousWriteVisible) submittedNotes else base) to requested
+            }
+        }
 
         companion object {
             private const val DEBOUNCE_MS = 1000L
-            private const val MAX_INLINE_DRAFT_CHARS = 16_384L
+            private const val MAX_INLINE_DRAFT_CHARS = 16_384
             private const val NOTES_DRAFT_KEY = "notesDraft"
             private const val NOTES_DRAFT_BASE_KEY = "notesDraftBase"
             private const val NOTES_DRAFT_FILE_ID_KEY = "notesDraftFileId"
+            private const val NOTES_DRAFT_PATCH_KEY = "notesDraftPatch"
             private const val NOTES_CREATION_AUTHORIZED_KEY = "notesCreationAuthorized"
         }
     }

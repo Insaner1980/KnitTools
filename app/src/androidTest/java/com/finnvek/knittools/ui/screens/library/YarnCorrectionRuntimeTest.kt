@@ -32,6 +32,7 @@ import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.setTestProStatus
 import com.finnvek.knittools.ui.TestContentSplashRule
+import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardDetailActions
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardDetailScreen
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
@@ -176,19 +177,62 @@ class YarnCorrectionRuntimeTest {
         assertEquals(1, rows().size)
     }
 
-    private fun mountLibrary() {
+    @Test fun saveWhileLibraryIsAbsentClosesOnlyTheSubmittedSheet() {
+        lateinit var submitted: ManualYarnCardInput
+        mountLibrary { input ->
+            submitted = input
+            true
+        }
+        click(R.string.add_yarn_to_my_yarn)
+        fields()[0].performTextReplacement(prefix)
+        node(R.string.save).performScrollTo().performClick()
+        rule.runOnUiThread {
+            val saved = saveables.performSave()
+            rule.activity.setContent { }
+            saveables = SaveableStateRegistry(saved) { true }
+        }
+        rule.waitForIdle()
+        rule.runOnUiThread { assertTrue(library.createManualYarnCard(submitted)) }
+        rule.waitUntil(5_000) { library.yarnSaveSuccessId.value == 1L }
+        mountLibrary()
+        node(R.string.save).assertDoesNotExist()
+
+        click(R.string.add_yarn_to_my_yarn)
+        fields()[0].performTextReplacement("Next draft")
+        rule.runOnUiThread {
+            val saved = saveables.performSave()
+            rule.activity.setContent { }
+            saveables = SaveableStateRegistry(saved) { true }
+        }
+        rule.waitForIdle()
+        mountLibrary()
+        fields()[0].assertTextContains("Next draft")
+        assertEquals(1, rows().size)
+    }
+
+    private fun mountLibrary(onCreate: (ManualYarnCardInput) -> Boolean = library::createManualYarnCard) {
         rule.runOnUiThread {
             rule.activity.setContent {
                 CompositionLocalProvider(LocalSaveableStateRegistry provides saveables) {
                     val canCreate by library.canUseYarnCards.collectAsState()
                     val pro by library.proState.collectAsState()
                     val proAccessReady by library.proAccessReady.collectAsState()
+                    val successId by library.yarnSaveSuccessId.collectAsState()
                     KnitToolsTheme {
                         MyYarnScreen(
-                            MyYarnState(emptyList(), emptyMap(), false, emptySet(), canCreate, pro, proAccessReady),
+                            MyYarnState(
+                                cards = emptyList(),
+                                activeProjectNames = emptyMap(),
+                                isSelectMode = false,
+                                selectedYarnIds = emptySet(),
+                                canCreateYarnCard = canCreate,
+                                proState = pro,
+                                proAccessReady = proAccessReady,
+                                saveSuccessId = successId,
+                            ),
                             MyYarnActions(
                                 {},
-                                library::createManualYarnCard,
+                                onCreate,
                                 library::retryCreateManualYarnCard,
                                 {},
                                 {},
@@ -197,6 +241,8 @@ class YarnCorrectionRuntimeTest {
                                 {},
                                 {},
                                 {},
+                                deliverDeleteError = library.yarnDeleteError::deliver,
+                                deliverSaveError = library.yarnSaveError::deliver,
                             ),
                         )
                     }

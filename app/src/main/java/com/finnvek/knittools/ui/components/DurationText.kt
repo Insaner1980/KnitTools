@@ -130,8 +130,8 @@ internal fun durationRuns(
     var nextArgumentIndex = 0
     var currentTier = 0
 
-    fun flushLiteral() {
-        val text = literal.toString().trim()
+    fun flushLiteral(beforeSecondary: Boolean = false) {
+        val text = if (beforeSecondary) literal.toString().trimEnd() else literal.toString()
         literal.setLength(0)
         if (text.isNotEmpty()) {
             parsed += DurationRun(text = text, isNumber = false, isSecondary = currentTier > 0)
@@ -151,7 +151,7 @@ internal fun durationRuns(
                 ?.toInt()
                 ?.minus(1) ?: nextArgumentIndex
         nextArgumentIndex = argumentIndex + 1
-        flushLiteral()
+        flushLiteral(beforeSecondary = argumentIndex == 1)
         currentTier = argumentIndex.coerceAtMost(1)
         parsed +=
             DurationRun(

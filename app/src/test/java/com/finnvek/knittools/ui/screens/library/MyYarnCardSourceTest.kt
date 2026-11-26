@@ -102,8 +102,9 @@ class MyYarnCardSourceTest {
         val successEffect =
             screen
                 .substringAfter("LaunchedEffect(state.saveSuccessId) {")
-                .substringBefore("LaunchedEffect(state.saveErrorId)")
-        assertTrue(successEffect.contains("state.saveSuccessId > lastHandledSaveSuccessId"))
+                .substringBefore("ManualYarnCardSheet(")
+        assertTrue(successEffect.contains("submittedAtSuccessId ?: return@LaunchedEffect"))
+        assertTrue(successEffect.contains("state.saveSuccessId > submittedAt"))
         assertTrue(successEffect.contains("showManualYarnSheet = false"))
         assertTrue(screen.contains("if (!actions.onCreateYarnCard(input)) {"))
         assertTrue(screen.contains("onDismiss = { showManualYarnSheet = false }"))

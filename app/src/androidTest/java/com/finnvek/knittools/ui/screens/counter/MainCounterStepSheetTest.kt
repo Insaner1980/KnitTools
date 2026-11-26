@@ -331,6 +331,11 @@ class MainCounterStepSheetTest(
         val input = compose.onNodeWithTag("main-step-input")
         val save = compose.onNodeWithText(context.getString(R.string.save))
         val presets = listOf(1, 2, 5)
+        val placeholder =
+            context.getString(
+                R.string.field_example_format,
+                context.getString(R.string.counter_step_custom_placeholder),
+            )
         for (amount in presets + 12) {
             compose.runOnIdle { initialStep = amount }
             val expectedInput = if (amount in presets) "" else amount.toString()
@@ -342,7 +347,7 @@ class MainCounterStepSheetTest(
                 if (preset == amount) option.assertIsSelected() else option.assertIsNotSelected()
             }
             if (amount in presets) {
-                compose.onNodeWithText(context.getString(R.string.counter_step_custom_placeholder)).assertExists()
+                compose.onNodeWithText(placeholder).assertExists()
             }
             save.performScrollTo().performClick()
             compose.runOnIdle { assertEquals(amount, saved) }
@@ -366,7 +371,7 @@ class MainCounterStepSheetTest(
         input.performScrollTo().assert(
             SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("")),
         )
-        compose.onNodeWithText(context.getString(R.string.counter_step_custom_placeholder)).assertExists()
+        compose.onNodeWithText(placeholder).assertExists()
         save.performScrollTo().performClick()
         compose.runOnIdle { assertEquals(5, saved) }
     }

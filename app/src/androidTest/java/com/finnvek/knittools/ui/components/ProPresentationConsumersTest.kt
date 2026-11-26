@@ -100,7 +100,21 @@ class ProPresentationConsumersTest {
             KnitToolsTheme {
                 MyYarnScreen(
                     state = state.value,
-                    actions = MyYarnActions({}, { false }, { false }, {}, {}, {}, {}, {}, {}, {}),
+                    actions =
+                        MyYarnActions(
+                            {},
+                            { false },
+                            { false },
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            deliverDeleteError = { _, _ -> },
+                            deliverSaveError = { _, _ -> },
+                        ),
                 )
             }
         }

@@ -29,14 +29,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -108,6 +106,8 @@ data class MyYarnActions(
     val onExitSelectMode: () -> Unit,
     val onUpgradeToPro: () -> Unit,
     val onBack: () -> Unit,
+    val deliverDeleteError: LibraryErrorDelivery,
+    val deliverSaveError: LibraryErrorDelivery,
 )
 
 private enum class PendingYarnProAction {
@@ -129,9 +129,6 @@ fun MyYarnScreen(
     var openAddPending by rememberSaveable { mutableStateOf(openAddOnEntry) }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
     var actionAwaitingEntitlement by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
-    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
-    var lastHandledSaveErrorId by rememberSaveable { mutableLongStateOf(state.saveErrorId) }
-    var lastHandledSaveSuccessId by rememberSaveable { mutableLongStateOf(state.saveSuccessId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val requestAddYarn = {
@@ -149,26 +146,9 @@ fun MyYarnScreen(
         }
     }
 
-    LaunchedEffect(state.deleteErrorId) {
-        if (state.deleteErrorId > lastHandledDeleteErrorId) {
-            lastHandledDeleteErrorId = state.deleteErrorId
-            snackbarHostState.showSnackbar(deleteFailedMessage)
-        }
-    }
+    LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError, snackbarHostState, deleteFailedMessage)
 
-    LaunchedEffect(state.saveSuccessId) {
-        if (state.saveSuccessId > lastHandledSaveSuccessId) {
-            lastHandledSaveSuccessId = state.saveSuccessId
-            showManualYarnSheet = false
-        }
-    }
-
-    LaunchedEffect(state.saveErrorId) {
-        if (state.saveErrorId > lastHandledSaveErrorId) {
-            lastHandledSaveErrorId = state.saveErrorId
-            snackbarHostState.showSnackbar(deleteFailedMessage)
-        }
-    }
+    LibraryErrorSnackbarEffect(state.saveErrorId, actions.deliverSaveError, snackbarHostState, deleteFailedMessage)
 
     LaunchedEffect(state.canCreateYarnCard, actionAwaitingEntitlement) {
         val action = actionAwaitingEntitlement ?: return@LaunchedEffect
@@ -189,7 +169,7 @@ fun MyYarnScreen(
         actions.onExitSelectMode()
     }
 
-    if (showDeleteConfirmDialog) {
+    if (showDeleteConfirmDialog && state.selectedYarnIds.isNotEmpty()) {
         MyYarnDeleteDialog(
             selectedCount = state.selectedYarnIds.size,
             onConfirm = {
@@ -199,11 +179,20 @@ fun MyYarnScreen(
             onDismiss = { showDeleteConfirmDialog = false },
         )
     }
+    LaunchedEffect(state.selectedYarnIds.isEmpty()) {
+        if (state.selectedYarnIds.isEmpty()) showDeleteConfirmDialog = false
+    }
 
     if (showManualYarnSheet) {
+        var submittedAtSuccessId by rememberSaveable { mutableStateOf<Long?>(null) }
+        LaunchedEffect(state.saveSuccessId) {
+            val submittedAt = submittedAtSuccessId ?: return@LaunchedEffect
+            if (state.saveSuccessId > submittedAt) showManualYarnSheet = false
+        }
         ManualYarnCardSheet(
             saving = state.isSaving,
             onSave = { input ->
+                submittedAtSuccessId = state.saveSuccessId
                 if (!actions.onCreateYarnCard(input)) {
                     pendingProAction = PendingYarnProAction.RetryCreation
                 }
@@ -238,7 +227,7 @@ fun MyYarnScreen(
                 onBack = actions.onBack,
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { LibrarySnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             SelectModeDeleteBar(
                 visible = state.isSelectMode && state.selectedYarnIds.isNotEmpty(),

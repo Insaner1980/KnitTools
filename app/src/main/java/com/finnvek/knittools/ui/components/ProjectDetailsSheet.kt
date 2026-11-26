@@ -477,12 +477,14 @@ private fun CustomMainCounterLabelField(
 internal fun CraftTypeToggle(
     selected: CraftType,
     onSelect: (CraftType) -> Unit,
+    enabled: Boolean = true,
 ) {
     val options = CraftType.entries
     SegmentedToggle(
         options = options.map { craftTypeLabel(it) },
         selectedIndex = options.indexOf(selected),
         onSelect = { onSelect(options[it]) },
+        enabled = enabled,
     )
 }
 

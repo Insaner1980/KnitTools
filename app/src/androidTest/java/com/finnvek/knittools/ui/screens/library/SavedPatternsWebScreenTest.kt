@@ -1,6 +1,9 @@
 package com.finnvek.knittools.ui.screens.library
 
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
@@ -17,6 +20,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -33,6 +42,72 @@ class SavedPatternsWebScreenTest {
     val composeRule = createComposeRule()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test
+    fun queuedDeleteErrorSurvivesLeavingTheScreenBeforeItIsDisplayed() {
+        val host = SnackbarHostState()
+        val handle = SavedStateHandle()
+        val error = LibraryErrorState(handle, "delete")
+        val showScreen = mutableStateOf(true)
+        composeRule.setContent {
+            KnitToolsTheme {
+                LaunchedEffect(host) { host.showSnackbar("First", duration = SnackbarDuration.Indefinite) }
+                if (showScreen.value) {
+                    val id = error.id.collectAsStateWithLifecycle().value
+                    LibraryErrorSnackbarEffect(id, error::deliver, host, "Delete failed")
+                }
+                LibrarySnackbarHost(host)
+            }
+        }
+        composeRule.onNodeWithText("First").assertIsDisplayed()
+        composeRule.runOnIdle { error.report() }
+        composeRule.onNodeWithText("Delete failed").assertDoesNotExist()
+        composeRule.runOnIdle { showScreen.value = false }
+        composeRule.waitForIdle()
+        composeRule.runOnIdle {
+            assertEquals(0L, handle.get<Long>("delete.handled") ?: 0L)
+            host.currentSnackbarData?.dismiss()
+            showScreen.value = true
+        }
+        composeRule.onNodeWithText("Delete failed").assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(1L, handle.get<Long>("delete.handled")) }
+    }
+
+    @Test
+    fun aDeleteErrorWhileTheListIsAbsentIsShownOnceOnReturn() {
+        val shown = mutableStateOf(false)
+        val error = LibraryErrorState(SavedStateHandle(), "patternDeleteErrorId")
+        val message = context.getString(R.string.generic_error_unknown)
+        val owner =
+            object : LifecycleOwner {
+                override val lifecycle = LifecycleRegistry(this)
+            }
+        composeRule.runOnUiThread { owner.lifecycle.currentState = Lifecycle.State.STARTED }
+        composeRule.setContent {
+            KnitToolsTheme {
+                if (shown.value) {
+                    CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                        val errorId = error.id.collectAsStateWithLifecycle().value
+                        SavedPatternsScreen(
+                            state = state(emptyList()).copy(deleteErrorId = errorId),
+                            actions = actions().copy(deliverDeleteError = error::deliver),
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.runOnIdle {
+            error.report()
+            shown.value = true
+        }
+        composeRule.onNodeWithText(message).assertDoesNotExist()
+        composeRule.runOnIdle { owner.lifecycle.currentState = Lifecycle.State.RESUMED }
+        composeRule.onNodeWithText(message).assertIsDisplayed()
+        composeRule.runOnIdle { shown.value = false }
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { shown.value = true }
+        composeRule.onNodeWithText(message).assertDoesNotExist()
+    }
 
     // BadgePill näyttää lähteen versaalina.
     private val webLabel
@@ -190,6 +265,7 @@ class SavedPatternsWebScreenTest {
             onToggleSelection = {},
             onSelectAll = {},
             onDeleteSelected = {},
+            deliverDeleteError = { _, _ -> },
             onExitSelectMode = {},
             onBack = {},
         )

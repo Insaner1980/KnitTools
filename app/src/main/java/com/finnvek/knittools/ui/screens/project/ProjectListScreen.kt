@@ -179,6 +179,13 @@ fun ProjectListScreen(
     var editingFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var editingFolderName by rememberSaveable { mutableStateOf("") }
     var deletingFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val deletionSnapshot = folderState.snapshot
+    LaunchedEffect(deletionSnapshot, deletingFolderId, folderState.isLoading) {
+        val target = deletingFolderId ?: return@LaunchedEffect
+        if (!folderState.isLoading && deletionSnapshot != null && deletionSnapshot.folders.none { it.id == target }) {
+            deletingFolderId = null
+        }
+    }
     var showMoveSheet by rememberSaveable { mutableStateOf(false) }
     var focusFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var focusCreateFolder by rememberSaveable { mutableStateOf(false) }

@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -21,7 +22,9 @@ import androidx.test.runner.lifecycle.Stage
 import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -99,6 +102,61 @@ class PatternShareQueueRuntimeTest {
         assertEquals(patternsBefore, savedPatterns())
     }
 
+    @Test
+    fun linkSharedDuringSaveOpensAfterTheSavingEditorCloses() {
+        assertEquals("com.finnvek.knittools.activepolicytest", app.packageName)
+        launchActivity()
+        val database = app.database.get()
+        val savedPath = "queued-while-saving-first"
+        val savedUrl = "https://example.invalid/$savedPath"
+        try {
+            deliver(savedPath, "First saved pattern")
+            assertDraft("First saved pattern", savedPath)
+            runBlocking {
+                val transactionStarted = CompletableDeferred<Unit>()
+                val releaseTransaction = CompletableDeferred<Unit>()
+                launch(Dispatchers.IO) {
+                    database.withTransaction {
+                        transactionStarted.complete(Unit)
+                        releaseTransaction.await()
+                    }
+                }
+                try {
+                    transactionStarted.await()
+                    val save = hasText(app.getString(R.string.save)) and hasClickAction()
+                    rule.onNode(save).performScrollTo().performClick()
+                    waitUntil { rule.onAllNodes(save).fetchSemanticsNodes().isEmpty() }
+                    deliverDirectly("https://example.invalid/queued-while-saving-next", "Next shared pattern")
+                    rule.waitForIdle()
+                } finally {
+                    releaseTransaction.complete(Unit)
+                }
+            }
+            assertDraft("Next shared pattern", "queued-while-saving-next")
+        } finally {
+            runBlocking(Dispatchers.IO) {
+                val dao = database.savedPatternDao()
+                dao.getByCanonicalUrl(savedUrl)?.let { dao.deleteById(it.id) }
+            }
+        }
+    }
+
+    @Test
+    fun sharedRavelryLinkWaitsForAnOpenWebEditorDraft() {
+        assertEquals("com.finnvek.knittools.activepolicytest", app.packageName)
+        launchActivity()
+        deliver("draft-before-ravelry", "Draft before Ravelry")
+        assertDraft("Draft before Ravelry", "draft-before-ravelry")
+
+        deliverDirectly("https://www.ravelry.com/patterns/library/synthetic-pattern", "Ravelry pattern")
+        rule.waitForIdle()
+        assertDraft("Draft before Ravelry", "draft-before-ravelry")
+        rule.onNodeWithText(app.getString(R.string.cancel)).performScrollTo().performClick()
+
+        waitUntil { editorTexts().isEmpty() }
+        rule.onNodeWithText(app.getString(R.string.ravelry_browser_hint)).assertIsDisplayed()
+    }
+
     private fun savedPatterns() =
         runBlocking(Dispatchers.IO) {
             app.database
@@ -145,6 +203,21 @@ class PatternShareQueueRuntimeTest {
                 .putExtra(Intent.EXTRA_TEXT, "https://example.invalid/$path")
                 .putExtra(Intent.EXTRA_SUBJECT, title),
         )
+    }
+
+    private fun deliverDirectly(
+        url: String,
+        title: String,
+    ) {
+        instrumentation.runOnMainSync {
+            instrumentation.callActivityOnNewIntent(
+                activity,
+                Intent(Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(Intent.EXTRA_TEXT, url)
+                    .putExtra(Intent.EXTRA_SUBJECT, title),
+            )
+        }
     }
 
     private fun assertDraft(

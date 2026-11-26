@@ -194,7 +194,8 @@ class ProjectFolderComponentsTest {
             }
         }
 
-        composeRule.onNodeWithText("Move Cardigan to folder").assertIsDisplayed()
+        composeRule.onNodeWithText("Move to folder").assertIsDisplayed()
+        composeRule.onNodeWithText("Cardigan").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Personal. Current destination.").assertIsSelected()
         composeRule
             .onNodeWithText("Unfiled")
@@ -377,7 +378,7 @@ class ProjectFolderComponentsTest {
             }
         }
 
-        composeRule.onNodeWithText("No folders").assertIsDisplayed()
+        composeRule.onNodeWithText("You haven’t created any folders yet.").assertIsDisplayed()
         composeRule.onNodeWithText("Create folder").assertHeightIsAtLeast(48.dp)
         captureScreenshot("folders-sheet-empty-light")
     }

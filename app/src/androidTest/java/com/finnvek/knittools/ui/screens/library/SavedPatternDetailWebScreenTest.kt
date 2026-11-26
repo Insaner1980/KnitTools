@@ -66,6 +66,7 @@ class SavedPatternDetailWebScreenTest {
                                 },
                                 onOpenProject = { attached += 1 },
                                 onRemove = {},
+                                deliverDeleteError = { _, _ -> },
                             )
                         }
                     }
@@ -143,6 +144,7 @@ class SavedPatternDetailWebScreenTest {
                     },
                     onOpenProject = { attached += 1 },
                     onRemove = {},
+                    deliverDeleteError = { _, _ -> },
                 )
             }
         }
@@ -235,6 +237,7 @@ class SavedPatternDetailWebScreenTest {
                     },
                     onOpenProject = { attached += 1 },
                     onRemove = { removed += 1 },
+                    deliverDeleteError = { _, _ -> },
                 )
             }
         }
@@ -298,6 +301,7 @@ class SavedPatternDetailWebScreenTest {
                         )
                     },
                     onRemove = {},
+                    deliverDeleteError = { _, _ -> },
                 )
             }
         }

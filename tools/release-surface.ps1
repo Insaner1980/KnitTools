@@ -111,6 +111,8 @@ function Add-CheckResult {
         [Nullable[int]]$Line = $null
     )
 
+    $Message = Remove-SecretValuesFromDiagnostic -Text $Message -Secrets $script:KnownRavelrySecrets
+    $RelativePath = Remove-SecretValuesFromDiagnostic -Text $RelativePath -Secrets $script:KnownRavelrySecrets
     $lineText = "[$Status] $Check`: $Message"
     if ($Status -ne "PASS" -and -not [string]::IsNullOrWhiteSpace($RelativePath)) {
         $lineText += " in $RelativePath"
@@ -231,13 +233,24 @@ function Invoke-Git {
     param([string[]]$Arguments)
 
     $previousErrorActionPreference = $ErrorActionPreference
+    $savedEnvironment = @{}
     try {
         # Windows PowerShell 5.1 muuntaa natiiviprosessin stderr-rivit virhetietueiksi.
         # Exit-koodi on tämän sopimuksen lähdetotuus, joten kerää tulos ilman terminating erroria.
         $ErrorActionPreference = "Continue"
+        foreach ($name in $script:GitLocalVariableNames) {
+            $value = [Environment]::GetEnvironmentVariable($name, "Process")
+            if ($null -ne $value) {
+                $savedEnvironment[$name] = $value
+                [Environment]::SetEnvironmentVariable($name, $null, "Process")
+            }
+        }
         $output = & git -C $RepoRoot @Arguments 2>$null
         $exitCode = $LASTEXITCODE
     } finally {
+        foreach ($name in $savedEnvironment.Keys) {
+            [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], "Process")
+        }
         $ErrorActionPreference = $previousErrorActionPreference
     }
     [pscustomobject]@{
@@ -278,7 +291,36 @@ function Test-ManifestPermissions {
         $comparison = Compare-SetValues -Actual $actual -Expected $expected
 
         if ($comparison.Matches) {
-            Add-Pass -Check $check -Message "exact set matches contract"
+            $overlay = "app/src/release/AndroidManifest.xml"
+            if (Test-Path -LiteralPath (Join-RepoPath $overlay)) {
+                $overlayXml = Read-XmlFile $overlay
+                foreach ($node in @($overlayXml.DocumentElement.SelectNodes("uses-permission|uses-permission-sdk-23"))) {
+                    $permission = Get-AndroidAttribute -Node $node -Name "name"
+                    $operation = $node.GetAttribute("node", "http://schemas.android.com/tools")
+                    if ($operation -eq "removeAll" -or
+                        ($operation -eq "remove" -and $permission -in $expected) -or
+                        ($operation -ne "remove" -and $permission -notin $expected)) {
+                        Add-Fail -Check $check -Message "release source overlay changes the app permission contract: $permission" -RelativePath $overlay
+                        return
+                    }
+                }
+            }
+            $built = Get-BuiltReleaseManifestPath
+            if ($built) {
+                $builtXml = Read-XmlFile $built
+                $builtPermissions = @(
+                    $builtXml.DocumentElement.SelectNodes("uses-permission|uses-permission-sdk-23") |
+                        ForEach-Object { Get-AndroidAttribute -Node $_ -Name "name" }
+                )
+                $missing = @($expected | Where-Object { $_ -notin $builtPermissions })
+                if ($missing.Count -gt 0 -or "android.permission.RECORD_AUDIO" -in $builtPermissions) {
+                    Add-Fail -Check $check -Message "built release is missing a required permission or declares forbidden RECORD_AUDIO" -RelativePath $built
+                    return
+                }
+                Add-Pass -Check $check -Message "exact app source set and built release required/forbidden permissions match contract"
+            } else {
+                Add-Pass -Check $check -Message "exact app source set matches contract (built release manifest unavailable)"
+            }
             return
         }
 
@@ -305,8 +347,6 @@ function Test-ManifestFlags {
     $relativePath = "app/src/main/AndroidManifest.xml"
 
     try {
-        $xml = Read-XmlFile $relativePath
-        $application = $xml.DocumentElement.SelectSingleNode("application")
         $expected = @(
             [pscustomobject]@{ Name = "usesCleartextTraffic"; Value = "false" },
             [pscustomobject]@{ Name = "allowBackup"; Value = "false" },
@@ -317,24 +357,49 @@ function Test-ManifestFlags {
 
         $problems = @()
         $firstLine = $null
-        foreach ($item in $expected) {
-            $actual = Get-AndroidAttribute -Node $application -Name $item.Name
-            if ($actual -ne $item.Value) {
-                $problems += "$($item.Name) expected '$($item.Value)' but was '$actual'"
-                if ($null -eq $firstLine) {
-                    $firstLine = Get-LineNumber -RelativePath $relativePath -Pattern $item.Name
+        $overlay = "app/src/release/AndroidManifest.xml"
+        $built = Get-BuiltReleaseManifestPath
+        $paths = @($relativePath)
+        if (Test-Path -LiteralPath (Join-RepoPath $overlay)) { $paths += $overlay }
+        if ($built) { $paths += $built }
+        foreach ($inputPath in $paths) {
+            $xml = Read-XmlFile $inputPath
+            $application = $xml.DocumentElement.SelectSingleNode("application")
+            if ($inputPath -eq $overlay -and $null -eq $application) { continue }
+            $toolsNamespace = "http://schemas.android.com/tools"
+            foreach ($item in $expected) {
+                $actual = Get-AndroidAttribute -Node $application -Name $item.Name
+                if ($inputPath -eq $overlay) {
+                    $removed = @($application.GetAttribute("remove", $toolsNamespace) -split '\s*,\s*')
+                    if ("android:$($item.Name)" -in $removed) { $actual = "[removed]" }
+                    if (!$actual -and $application.GetAttribute("node", $toolsNamespace) -notin @("replace", "remove")) { continue }
+                }
+                if ($actual -ne $item.Value) {
+                    $problems += "$($item.Name) expected '$($item.Value)' but was '$actual' in $inputPath"
+                    if ($null -eq $firstLine) {
+                        $relativePath = $inputPath
+                        $firstLine = Get-LineNumber -RelativePath $inputPath -Pattern $item.Name
+                    }
                 }
             }
         }
 
         if ($problems.Count -eq 0) {
-            Add-Pass -Check $check -Message "release and privacy attributes match contract"
+            $scope = if ($built) { "source and built release manifest" } else { "source manifests only; built release manifest unavailable" }
+            Add-Pass -Check $check -Message "release and privacy attributes match contract ($scope)"
         } else {
             Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $relativePath -Line $firstLine
         }
     } catch {
         Add-Fail -Check $check -Message $_.Exception.Message -RelativePath $relativePath
     }
+}
+
+function Get-BuiltReleaseManifestPath {
+    @(
+        "app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml",
+        "app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml"
+    ) | Where-Object { Test-Path -LiteralPath (Join-RepoPath $_) -PathType Leaf } | Select-Object -First 1
 }
 
 function Test-ExportedSurface {
@@ -361,10 +426,7 @@ function Test-ExportedSurface {
         if (Test-Path -LiteralPath (Join-RepoPath $overlay)) {
             $manifestInputs += [pscustomobject]@{ Path = $overlay; Overlay = $true; Built = $false }
         }
-        $built = @(
-            "app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml",
-            "app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml"
-        ) | Where-Object { Test-Path -LiteralPath (Join-RepoPath $_) -PathType Leaf } | Select-Object -First 1
+        $built = Get-BuiltReleaseManifestPath
         if ($built) {
             $manifestInputs += [pscustomobject]@{ Path = $built; Overlay = $false; Built = $true }
         }
@@ -561,7 +623,8 @@ function Test-FirebaseBoundary {
     $check = "firebase-boundary"
     $googleServicesPaths = @(
         "app/google-services.json",
-        "app/src/debug/google-services.json"
+        "app/src/debug/google-services.json",
+        "app/src/release/google-services.json"
     )
     $gitignorePath = ".gitignore"
     $firstPath = "app/build.gradle.kts"
@@ -583,6 +646,15 @@ function Test-FirebaseBoundary {
                 $problems += ".gitignore does not cover $googleServicesPath"
                 $firstPath = $gitignorePath
                 $firstLine = Get-LineNumber -RelativePath $gitignorePath -Pattern "google-services\.json"
+            }
+        }
+        $trackedVariantConfigs = Invoke-Git -Arguments @("ls-files", "--", ":(glob)app/src/**/google-services.json")
+        if ($trackedVariantConfigs.ExitCode -ne 0) {
+            $problems += "git ls-files failed for variant Google Services configuration"
+        } else {
+            foreach ($file in $trackedVariantConfigs.Output | Where-Object { $_ -notin $googleServicesPaths }) {
+                $problems += "$file is tracked by git"
+                $firstPath = $file
             }
         }
 
@@ -656,10 +728,22 @@ function Test-SentryBoundary {
             "baselineprofile/build.gradle.kts",
             "gradle/libs.versions.toml"
         ) | Where-Object { Test-Path -LiteralPath (Join-RepoPath $_) }
+        $sentryAliases = @(
+            foreach ($line in Get-CodeLines "gradle/libs.versions.toml") {
+                if ($line.Text -match '^\s*([\w.-]+)\s*=\s*\{.*\b(?:group\s*=\s*"io\.sentry"|module\s*=\s*"io\.sentry:)') {
+                    $Matches[1] -replace '[-_]', '.'
+                }
+            }
+        )
 
         foreach ($file in $gradleFiles) {
             foreach ($line in Get-CodeLines $file) {
-                if ($line.Text -match '^\s*(implementation|api|releaseImplementation|runtimeOnly|releaseRuntimeOnly|compileOnly|releaseCompileOnly)\s*\(.*(sentry|io\.sentry|libs\.sentry)' -or
+                $releaseDependency = $line.Text -match '^\s*(implementation|api|releaseImplementation|runtimeOnly|releaseRuntimeOnly|compileOnly|releaseCompileOnly)\s*\('
+                $usesSentryAlias = $releaseDependency -and @(
+                    [regex]::Matches($line.Text, '\blibs\.([\w.]+)') |
+                        Where-Object { $_.Groups[1].Value -in $sentryAliases }
+                ).Count -gt 0
+                if (($releaseDependency -and $line.Text -match 'sentry|io\.sentry|libs\.sentry') -or $usesSentryAlias -or
                     $line.Text -match '\bid\s*(?:\(\s*|=\s*)["'']io\.sentry(?:\.[\w.-]+)?["'']|alias\s*\(\s*libs\.plugins\.sentry\b') {
                     $problems += "release-visible Sentry dependency in $file"
                     if ($null -eq $firstLine) {
@@ -821,13 +905,7 @@ function Get-KnownRavelrySecretValues {
         }
     }
 
-    return @(
-        $values |
-            Where-Object {
-                $_.Length -ge 8 -and
-                    $_ -notmatch '^(?i)(example|placeholder|dummy|test|knitter|secret|password|client)$'
-            }
-    )
+    return @($values)
 }
 
 function Test-TextFileContainsSecret {
@@ -920,10 +998,9 @@ function Remove-SecretValuesFromDiagnostic {
 
 function Test-KnownRavelrySecrets {
     $check = "known-ravelry-secrets"
-    $secrets = @()
+    $secrets = $script:KnownRavelrySecrets
 
     try {
-        $secrets = @(Get-KnownRavelrySecretValues)
         if ($secrets.Count -eq 0) {
             Add-Pass -Check $check -Message "no known local or environment Ravelry secret values were provided for comparison"
             return
@@ -1136,15 +1213,23 @@ function Test-RoomSchema {
             return
         }
 
-        $schemaVersions = @(
-            Get-ChildItem -LiteralPath $schemaDir -File -Filter "*.json" |
-                ForEach-Object {
-                    if ($_.BaseName -match '^\d+$') {
-                        [int]$_.BaseName
-                    }
-                } |
-                Sort-Object -Unique
-        )
+        $schemaVersions = @()
+        foreach ($schemaFile in Get-ChildItem -LiteralPath $schemaDir -File -Filter "*.json") {
+            if ($schemaFile.BaseName -notmatch '^\d+$') { continue }
+            $schemaVersion = [int]$schemaFile.BaseName
+            try {
+                $schema = Get-Content -LiteralPath $schemaFile.FullName -Raw | ConvertFrom-Json
+                if ($schema.database.version -ne $schemaVersion) {
+                    $problems += "schema export $($schemaFile.Name) has a mismatched database version"
+                    $firstPath = "$schemaRelativeDir/$($schemaFile.Name)"
+                }
+            } catch {
+                $problems += "schema export $($schemaFile.Name) is unreadable or invalid"
+                $firstPath = "$schemaRelativeDir/$($schemaFile.Name)"
+            }
+            $schemaVersions += $schemaVersion
+        }
+        $schemaVersions = @($schemaVersions | Sort-Object -Unique)
 
         if ($version -notin $schemaVersions) {
             $problems += "schema export $version.json missing"
@@ -1315,6 +1400,15 @@ function Test-LocaleParity {
     } catch {
         Add-Fail -Check $check -Message $_.Exception.Message -RelativePath $localePath
     }
+}
+
+$script:KnownRavelrySecrets = @()
+$script:GitLocalVariableNames = @(git rev-parse --local-env-vars)
+try {
+    $script:KnownRavelrySecrets = @(Get-KnownRavelrySecretValues)
+} catch {
+    Add-Fail -Check "known-ravelry-secrets" -Message "Unable to load known Ravelry secret values for comparison"
+    exit 1
 }
 
 Test-ManifestPermissions

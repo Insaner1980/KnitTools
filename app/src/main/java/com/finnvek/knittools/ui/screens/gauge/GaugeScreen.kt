@@ -227,18 +227,27 @@ private fun SwatchFields(
     state: GaugeUiState,
     onAction: (GaugeAction) -> Unit,
     axis: GaugeAxis? = null,
+    showManualValues: Boolean = false,
 ) {
     // Kentät ovat aina kortissa: kermataustalla vaalea kenttä ei erottunut lainkaan.
     if (axis != GaugeAxis.ROWS) {
         ToolInputCard(title = stringResource(R.string.measurement_stitches_width)) {
-            GaugeNumericField(state, GaugeField.SWATCH_WIDTH, onAction)
-            GaugeNumericField(state, GaugeField.SWATCH_STITCHES, onAction)
+            if (showManualValues && state.manualStitchGauge) {
+                GaugeNumericField(state, GaugeField.ACTUAL_STITCHES, onAction)
+            } else {
+                GaugeNumericField(state, GaugeField.SWATCH_WIDTH, onAction)
+                GaugeNumericField(state, GaugeField.SWATCH_STITCHES, onAction)
+            }
         }
     }
     if (axis != GaugeAxis.STITCHES) {
         ToolInputCard(title = stringResource(R.string.measurement_rows_height)) {
-            GaugeNumericField(state, GaugeField.SWATCH_HEIGHT, onAction)
-            GaugeNumericField(state, GaugeField.SWATCH_ROWS, onAction)
+            if (showManualValues && state.manualRowGauge) {
+                GaugeNumericField(state, GaugeField.ACTUAL_ROWS, onAction)
+            } else {
+                GaugeNumericField(state, GaugeField.SWATCH_HEIGHT, onAction)
+                GaugeNumericField(state, GaugeField.SWATCH_ROWS, onAction)
+            }
         }
     }
 }
@@ -261,7 +270,7 @@ private fun ActualGaugeFields(
         tag = "measurement_source",
     )
     if (state.useSwatch) {
-        SwatchFields(state, onAction, axis)
+        SwatchFields(state, onAction, axis, showManualValues = true)
     } else {
         ToolInputCard {
             if (axis != GaugeAxis.ROWS) GaugeNumericField(state, GaugeField.ACTUAL_STITCHES, onAction)

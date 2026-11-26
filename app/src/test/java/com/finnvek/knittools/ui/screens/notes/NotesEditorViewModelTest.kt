@@ -711,6 +711,73 @@ class NotesEditorViewModelTest : NotesEditorTestFixture() {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
+class NotesEditorDraftRecoveryTest : NotesEditorTestFixture() {
+    @Test
+    fun `failed final save restores a reconciled draft that grew too large for saved state`() =
+        verifyRestoredCorrection("Base" + " external".repeat(2_000), expectFile = true)
+
+    @Test
+    fun `failed final save restores a reconciled draft that still fits inline`() =
+        verifyRestoredCorrection("Base external", expectFile = false)
+
+    private fun verifyRestoredCorrection(
+        external: String,
+        expectFile: Boolean,
+    ) = runTest {
+        val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+        val stored = "$external red"
+        val corrected = "$external blue"
+        every { repository.observeProject(1L) } returns flowOf(project)
+        coEvery { repository.getProject(1L) } returns project.copy(notes = stored)
+        coEvery { repository.saveProjectNotes(1L, "Base", "Base red", false) } coAnswers {
+            try {
+                awaitCancellation()
+            } catch (cancelled: CancellationException) {
+                throw CancelledNotesMerge(external, stored, cancelled)
+            }
+        }
+        val storage = mockk<NotesDraftStorage>(relaxUnitFun = true)
+        val files = mutableMapOf<UUID, NotesDraft>()
+        coEvery { storage.write(1L, any(), any()) } answers {
+            files[secondArg<UUID>()] = thirdArg<NotesDraft>()
+            true
+        }
+        coEvery { storage.read(1L, any()) } answers { files[secondArg<UUID>()] }
+        val handle = SavedStateHandle(mapOf("projectId" to 1L))
+        val editor = createEditor(handle, storage)
+        val store = androidx.lifecycle.ViewModelStore()
+        store.put("editor", editor)
+        runCurrent()
+        editor.onNotesChanged("Base red")
+        editor.saveImmediately()
+        runCurrent()
+        editor.onNotesChanged("Base blue")
+        assertNull(handle.get<String>("notesDraftFileId"))
+        store.clear()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { repository.saveProjectNotes(1L, stored, corrected, false) }
+        val fileId = handle.get<String>("notesDraftFileId")
+        assertEquals(expectFile, fileId != null)
+        if (fileId != null) {
+            assertEquals(NotesDraft(corrected, stored), files[UUID.fromString(fileId)])
+            assertNull(handle.get<String>("notesDraft"))
+        } else {
+            assertEquals(corrected, handle.get<String>("notesDraft"))
+            assertEquals(stored, handle.get<String>("notesDraftBase"))
+        }
+        every { repository.observeProject(1L) } returns flowOf(project.copy(notes = stored))
+        coEvery { repository.saveProjectNotes(1L, stored, corrected, false) } returns
+            ProjectNotesSaveResult.Saved(project.copy(notes = corrected))
+        val restored = createEditor(SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) }), storage)
+        runCurrent()
+        assertEquals(corrected, restored.uiState.value.notes)
+        advanceUntilIdle()
+        coVerify(exactly = 2) { repository.saveProjectNotes(1L, stored, corrected, false) }
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
 class NotesEditorAccessTest : NotesEditorTestFixture() {
     @Test
     fun `late entitlement unlocks first notes and preserves the draft across access changes`() =

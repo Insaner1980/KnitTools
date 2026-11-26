@@ -379,25 +379,37 @@ class NotesEditorViewModel
             baseNotes: String,
         ) {
             val loadedProjectId = projectId ?: return
+            val fileId = storeInlineOrGetDraftFileId(notes, baseNotes) ?: return
+            draftWriteJob?.cancel()
+            draftWriteJob = viewModelScope.launch { writeDraftFile(loadedProjectId, fileId, notes, baseNotes) }
+        }
+
+        private fun storeInlineOrGetDraftFileId(
+            notes: String,
+            baseNotes: String,
+        ): UUID? {
             if (fitsSavedState(notes, baseNotes)) {
                 clearDraftFile()
                 savedStateHandle[NOTES_DRAFT_KEY] = notes
                 savedStateHandle[NOTES_DRAFT_BASE_KEY] = baseNotes
-                return
+                return null
             }
-            val fileId = draftFileId() ?: UUID.randomUUID()
-            savedStateHandle[NOTES_DRAFT_FILE_ID_KEY] = fileId.toString()
-            draftWriteJob?.cancel()
-            draftWriteJob =
-                viewModelScope.launch {
-                    draftFileMutex.withLock {
-                        if (draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))) {
-                            ensureActive()
-                            savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
-                            savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
-                        }
-                    }
+            return draftFileId() ?: UUID.randomUUID().also { savedStateHandle[NOTES_DRAFT_FILE_ID_KEY] = it.toString() }
+        }
+
+        private suspend fun writeDraftFile(
+            loadedProjectId: Long,
+            fileId: UUID,
+            notes: String,
+            baseNotes: String,
+        ) {
+            draftFileMutex.withLock {
+                if (draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))) {
+                    currentCoroutineContext().ensureActive()
+                    savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
+                    savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
                 }
+            }
         }
 
         private suspend fun restoreDraft(loadedProjectId: Long): NotesDraft? {
@@ -433,16 +445,13 @@ class NotesEditorViewModel
             baseNotes: String,
         ): Boolean = notes.length.toLong() + baseNotes.length <= MAX_INLINE_DRAFT_CHARS
 
-        private suspend fun retainLargeDraft(
+        private suspend fun retainFinalDraft(
             loadedProjectId: Long,
-            fileId: UUID?,
             notes: String,
             baseNotes: String,
         ) {
-            if (fileId == null || fitsSavedState(notes, baseNotes)) return
-            draftFileMutex.withLock {
-                draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))
-            }
+            val fileId = storeInlineOrGetDraftFileId(notes, baseNotes) ?: return
+            writeDraftFile(loadedProjectId, fileId, notes, baseNotes)
         }
 
         override fun onCleared() {
@@ -457,7 +466,6 @@ class NotesEditorViewModel
             if (!shouldFlush) return
             val baseBeforeClear = persistedNotes
             val interrupted = interruptedWrite
-            val fileId = draftFileId()
 
             @Suppress("TooGenericExceptionCaught")
             applicationScope.launch {
@@ -469,16 +477,16 @@ class NotesEditorViewModel
                             interrupted.job.join()
                             val storedNotes =
                                 readStoredNotes(loadedProjectId).getOrElse {
-                                    retainLargeDraft(loadedProjectId, fileId, draftBeforeClear, baseBeforeClear)
+                                    retainFinalDraft(loadedProjectId, draftBeforeClear, baseBeforeClear)
                                     return@launch
                                 } ?: return@launch
                             interrupted.reconcile(baseBeforeClear, draftBeforeClear, storedNotes, latestStoredNotes)
                         }
                     if (notesToSave == baseNotes) {
-                        clearDraftFile()
+                        clearSavedDraft()
                         return@launch
                     }
-                    retainLargeDraft(loadedProjectId, fileId, notesToSave, baseNotes)
+                    retainFinalDraft(loadedProjectId, notesToSave, baseNotes)
                     val result =
                         repository.saveProjectNotes(
                             id = loadedProjectId,
@@ -487,7 +495,7 @@ class NotesEditorViewModel
                             creationAuthorized =
                                 savedStateHandle.get<Boolean>(NOTES_CREATION_AUTHORIZED_KEY) == true,
                         )
-                    if (result is ProjectNotesSaveResult.Saved) clearDraftFile()
+                    if (result is ProjectNotesSaveResult.Saved) clearSavedDraft()
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {

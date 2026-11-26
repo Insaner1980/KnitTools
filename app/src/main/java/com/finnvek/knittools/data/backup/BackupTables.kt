@@ -225,13 +225,7 @@ internal object BackupTables {
                 val row = inputColumns.zip(values).toMap().toMutableMap()
                 (columns - inputColumns.toSet()).forEach { row[it] = JsonNull }
                 validateFields(table, row, budget)
-                if (table == "saved_patterns") {
-                    val thumbnail = row["thumbnailUrl"] as? JsonPrimitive
-                    if (thumbnail != null && thumbnail.isString) {
-                        row["thumbnailUrl"] = JsonPrimitive(normalizeRemotePatternImageUrl(thumbnail.content))
-                    }
-                }
-                validateYarnCardIds(table, row)
+                prepareRestoredRow(table, row)
                 budget.observeRow(table, row)
                 consume(row)
             }
@@ -312,17 +306,27 @@ internal object BackupTables {
 
     private fun invalidValue(): Nothing = throw BackupException(BackupError.VALIDATION)
 
-    private fun validateYarnCardIds(
+    private fun prepareRestoredRow(
         table: String,
-        row: Map<String, JsonElement>,
+        row: MutableMap<String, JsonElement>,
     ) {
-        if (table != "counter_projects") return
-        val value = row["yarnCardIds"] as? JsonPrimitive ?: return
-        if (!value.isString) return
-        BackupFormat.requireValid(
-            parseYarnCardIdsWithinLimits(value.content) != null,
-            BackupError.VALIDATION,
-        )
+        when (table) {
+            "saved_patterns" -> {
+                val thumbnail = row["thumbnailUrl"] as? JsonPrimitive
+                if (thumbnail?.isString == true) {
+                    row["thumbnailUrl"] = JsonPrimitive(normalizeRemotePatternImageUrl(thumbnail.content))
+                }
+            }
+
+            "counter_projects" -> {
+                val value = row["yarnCardIds"] as? JsonPrimitive ?: return
+                if (!value.isString) return
+                BackupFormat.requireValid(
+                    parseYarnCardIdsWithinLimits(value.content) != null,
+                    BackupError.VALIDATION,
+                )
+            }
+        }
     }
 
     private fun validateInteger(

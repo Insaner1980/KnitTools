@@ -100,6 +100,9 @@ jobs:
             /settings.gradle.kts
             /app/build.gradle.kts
             /app/src/
+            !/app/src/*/res/**/*.png
+            !/app/src/*/res/**/*.webp
+            !/app/src/*/res/**/*.ttf
             /sonar-project.properties
 
       # Read PR sources as data. Only the trusted base controls scanner settings.

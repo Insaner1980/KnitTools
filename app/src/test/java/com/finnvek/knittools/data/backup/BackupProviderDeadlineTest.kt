@@ -13,6 +13,24 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 class BackupProviderDeadlineTest {
+    @Test fun providerResultAfterDeadlineIsRejectedEvenWhenWatchdogHasNotRun() {
+        var now = 0L
+        val scheduler = mockk<ScheduledExecutorService>()
+        every { scheduler.schedule(any<Runnable>(), any<Long>(), TimeUnit.NANOSECONDS) } returns
+            mockk<ScheduledFuture<*>>(relaxed = true)
+        val closer = mockk<ExecutorService>(relaxed = true)
+        val deadline = ProviderDeadline(mockk(), 30, scheduler, closer, onFinished = {}, nanoTime = { now }) {}
+
+        assertThrows(IOException::class.java) {
+            deadline.call {
+                now = TimeUnit.MILLISECONDS.toNanos(31)
+                42
+            }
+        }
+        verify(exactly = 2) { closer.execute(any()) }
+        deadline.finish()
+    }
+
     @Test fun lateWatchdogFromCompletedCallCannotExpireTheNextCall() {
         val callbacks = mutableListOf<Runnable>()
         val scheduler = mockk<ScheduledExecutorService>()

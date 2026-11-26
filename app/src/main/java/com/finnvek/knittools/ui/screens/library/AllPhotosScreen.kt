@@ -88,7 +88,7 @@ fun AllPhotosScreen(
     var selectedProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
-    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
+    var lastHandledDeleteErrorId by remember { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val gridState = rememberLazyGridState()
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
@@ -136,7 +136,7 @@ fun AllPhotosScreen(
     }
 
     // Vahvistusdialoogi batch-poistolle
-    if (showDeleteConfirmDialog) {
+    if (showDeleteConfirmDialog && state.selectedPhotoIds.isNotEmpty()) {
         AllPhotosDeleteDialog(
             selectedCount = state.selectedPhotoIds.size,
             onConfirm = {
@@ -145,6 +145,9 @@ fun AllPhotosScreen(
             },
             onDismiss = { showDeleteConfirmDialog = false },
         )
+    }
+    LaunchedEffect(state.selectedPhotoIds.isEmpty()) {
+        if (state.selectedPhotoIds.isEmpty()) showDeleteConfirmDialog = false
     }
 
     Scaffold(
@@ -320,8 +323,8 @@ private fun PhotoGridItem(
             Modifier
                 .combinedClickable(
                     onClick = onClick,
-                    onLongClick = onLongClick,
-                    onLongClickLabel = stringResource(R.string.select_photo),
+                    onLongClick = onLongClick.takeUnless { isSelectMode },
+                    onLongClickLabel = if (isSelectMode) null else stringResource(R.string.select_photo),
                 ).then(
                     if (isSelectMode) {
                         Modifier.semantics { selected = isSelected }

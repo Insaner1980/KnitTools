@@ -110,11 +110,13 @@ class ProManager
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
 
-        internal fun hasCurrentFeature(feature: ProFeature): Boolean =
+        internal fun hasCurrentFeature(feature: ProFeature): Boolean = currentProState().hasFeature(feature)
+
+        private fun currentProState(): ProState =
             resolveProState(
                 ProPolicyTestControl.currentTrialState(trialManager.trialState.value),
                 ProPolicyTestControl.currentPurchased(billingManager.isProPurchased.value),
-            ).hasFeature(feature)
+            )
 
         suspend fun startTrial(): TrialStartResult = ProPolicyTestControl.startTrial { trialManager.startTrial() }
 
@@ -131,10 +133,12 @@ class ProManager
                     ProPolicyTestControl.purchaseStateReady(billingManager.purchaseStateReady).first { it }
                 }
             }
-            if (ProPolicyTestControl.currentPurchased(billingManager.isProPurchased.value)) {
-                return ProActionAccess.Allowed
-            }
-            return featureAccessFlow(feature).first()
+            val state = currentProState()
+            return proActionAccess(
+                state,
+                ready = initialStateReady.value || state.hasFeature(feature),
+                feature = feature,
+            )
         }
 
         fun featureAccessFlow(feature: ProFeature): Flow<ProActionAccess> =

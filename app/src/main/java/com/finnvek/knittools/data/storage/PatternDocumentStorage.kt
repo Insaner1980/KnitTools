@@ -2,9 +2,7 @@ package com.finnvek.knittools.data.storage
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.ImageDecoder
-import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.storage.StorageManager
 import androidx.core.net.toUri
@@ -17,6 +15,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import java.io.DataOutputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -141,7 +140,7 @@ class PatternDocumentStorage
                     stagingContext.ensureActive()
                     val stagedFile = File(sessionDirectory, "page-${UUID.randomUUID()}.img")
                     stagedFiles += stagedFile
-                    val copiedBytes = copySelectedImage(context, sourceUri, stagedFile)
+                    val copiedBytes = copySelectedImage(context, sourceUri, stagedFile, stagingContext::ensureActive)
                     batchBytes += copiedBytes
                     if (existingSelection.totalBytes + batchBytes > PatternImageImportLimits.MAX_TOTAL_BYTES) {
                         stageFailure(PatternImageStageFailure.TOTAL_TOO_LARGE)
@@ -187,6 +186,7 @@ class PatternDocumentStorage
             context: Context,
             sourceUri: Uri,
             stagedFile: File,
+            onChunk: () -> Unit,
         ): Long {
             val input =
                 try {
@@ -202,6 +202,7 @@ class PatternDocumentStorage
                         input = it,
                         target = stagedFile,
                         maxBytes = PatternImageImportLimits.MAX_BYTES_PER_IMAGE,
+                        onChunk = onChunk,
                     )
                 }
             } catch (failure: PatternImageTooLargeException) {
@@ -337,43 +338,31 @@ class PatternDocumentStorage
             onProgress: (currentPage: Int, totalPages: Int) -> Unit,
         ): Pair<String, String> {
             require(pages.isNotEmpty())
-            val document = PdfDocument()
-            try {
-                pages.forEachIndexed { index, stagedPage ->
-                    coroutineContext.ensureActive()
-                    val bitmap = decodeBoundedBitmap(File(stagedPage.stagedPath))
-                    try {
-                        val pageInfo = PdfDocument.PageInfo.Builder(bitmap.width, bitmap.height, index + 1).create()
-                        val pdfPage = document.startPage(pageInfo)
-                        try {
-                            pdfPage.canvas.drawColor(Color.WHITE)
-                            pdfPage.canvas.drawBitmap(bitmap, 0f, 0f, null)
-                        } finally {
-                            document.finishPage(pdfPage)
+            val conversionContext = coroutineContext
+            val pdfFile =
+                PatternDocumentFiles.writeUniquePdfOrThrow(
+                    directory = File(context.filesDir, "pattern_pdfs/$projectId"),
+                    fileName = fileName,
+                ) { target ->
+                    DataOutputStream(target.outputStream().buffered()).use { output ->
+                        val writer = ImagePagePdfWriter(output)
+                        pages.forEachIndexed { index, page ->
+                            conversionContext.ensureActive()
+                            val bitmap = decodeBoundedBitmap(File(page.stagedPath))
+                            try {
+                                writer.writePage(bitmap)
+                            } finally {
+                                bitmap.recycle()
+                            }
+                            onProgress(index + 1, pages.size)
                         }
-                    } finally {
-                        bitmap.recycle()
+                        conversionContext.ensureActive()
+                        writer.finish()
                     }
-                    coroutineContext.ensureActive()
-                    onProgress(index + 1, pages.size)
+                    if (!isReadablePdf(context, target)) throw IOException("Generated pattern PDF is not readable")
+                    conversionContext.ensureActive()
                 }
-                val conversionContext = coroutineContext
-                val pdfFile =
-                    PatternDocumentFiles.writeUniquePdfOrThrow(
-                        directory = File(context.filesDir, "pattern_pdfs/$projectId"),
-                        fileName = fileName,
-                    ) { targetFile ->
-                        conversionContext.ensureActive()
-                        targetFile.outputStream().use(document::writeTo)
-                        if (!isReadablePdf(context, targetFile)) {
-                            throw IOException("Generated pattern PDF is not readable")
-                        }
-                        conversionContext.ensureActive()
-                    }
-                return pdfFile.toUri().toString() to pdfFile.name
-            } finally {
-                document.close()
-            }
+            return pdfFile.toUri().toString() to pdfFile.name
         }
 
         private fun decodeBoundedBitmap(file: File): Bitmap {

@@ -69,4 +69,12 @@ class MeasurementNumberFormatterTest {
         )
         assertEquals("0%", MeasurementNumberFormatter.percent(0.0, Locale.US))
     }
+
+    @Test
+    fun `percentage shows unsigned zero only when rounded to zero`() {
+        assertEquals("0%", MeasurementNumberFormatter.percent(0.049, Locale.US))
+        assertEquals("0%", MeasurementNumberFormatter.percent(-0.049, Locale.US))
+        assertEquals("+0.1%", MeasurementNumberFormatter.percent(0.05, Locale.US))
+        assertEquals("-0.1%", MeasurementNumberFormatter.percent(-0.05, Locale.US))
+    }
 }

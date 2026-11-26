@@ -50,11 +50,13 @@ internal fun JourneyProject(
         label = stringResource(R.string.project_name_label),
         placeholder = stringResource(R.string.journey_name_placeholder, journeyExampleName(draft.projectCraftType)),
         inputModifier = Modifier.testTag("onboarding_project_name"),
+        enabled = !busy,
     )
     LabelWithInfo(label = stringResource(R.string.craft_type_label), info = null)
     CraftTypeToggle(
         selected = draft.projectCraftType,
         onSelect = { craft -> actions.edit { it.copy(projectCraft = craft) } },
+        enabled = !busy,
     )
     NumberInputField(
         value = draft.initialCount,

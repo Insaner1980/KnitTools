@@ -96,11 +96,12 @@ private fun YarnEstimatorContent(
     val scope = rememberCoroutineScope()
     var totalYarn by rememberSaveable { mutableStateOf("") }
     var yarnPerSkein by rememberSaveable { mutableStateOf("") }
+    var exactSkeinLength by rememberSaveable { mutableStateOf<Double?>(null) }
     var weightPerSkein by rememberSaveable { mutableStateOf("") }
     val locale = rememberCurrentLocale()
 
-    val result by remember(totalYarn, yarnPerSkein, weightPerSkein, locale) {
-        derivedStateOf { calculateYarnEstimate(totalYarn, yarnPerSkein, weightPerSkein, locale) }
+    val result by remember(totalYarn, yarnPerSkein, weightPerSkein, locale, exactSkeinLength) {
+        derivedStateOf { calculateYarnEstimate(totalYarn, yarnPerSkein, weightPerSkein, locale, exactSkeinLength) }
     }
 
     TrackCalculatorResult(UsageDetail.TOOL_YARN, result != null)
@@ -124,6 +125,7 @@ private fun YarnEstimatorContent(
                     scope.launch { snackbar.showSnackbar(missingValues) }
                 } else {
                     yarnPerSkein = fields.length
+                    exactSkeinLength = fields.exactLength
                     weightPerSkein = fields.weight
                 }
             },
@@ -148,7 +150,10 @@ private fun YarnEstimatorContent(
                 weightPerSkein = weightPerSkein,
                 useImperial = useImperial,
                 onTotalYarnChange = { totalYarn = it },
-                onYarnPerSkeinChange = { yarnPerSkein = it },
+                onYarnPerSkeinChange = {
+                    yarnPerSkein = it
+                    exactSkeinLength = null
+                },
                 onWeightPerSkeinChange = { weightPerSkein = it },
             )
         }
@@ -258,14 +263,15 @@ private fun YarnResultCard(result: YarnEstimate) {
     InfoNote(text = stringResource(R.string.extra_skein_note))
 }
 
-private fun calculateYarnEstimate(
+internal fun calculateYarnEstimate(
     totalYarn: String,
     yarnPerSkein: String,
     weightPerSkein: String,
     locale: Locale,
+    exactSkeinLength: Double? = null,
 ): YarnEstimate? {
     val total = MeasurementNumberParser.parse(totalYarn, locale).value ?: return null
-    val perSkein = MeasurementNumberParser.parse(yarnPerSkein, locale).value ?: return null
+    val perSkein = exactSkeinLength ?: MeasurementNumberParser.parse(yarnPerSkein, locale).value ?: return null
     val weight = MeasurementNumberParser.parse(weightPerSkein, locale).value ?: return null
     return YarnEstimator.estimate(total, perSkein, weight)
 }
@@ -283,6 +289,7 @@ internal fun exactSkeinsText(
 internal data class YarnEstimatorSkeinFields(
     val length: String,
     val weight: String,
+    val exactLength: Double?,
 )
 
 internal fun savedYarnSkeinFields(
@@ -312,6 +319,7 @@ internal fun savedYarnSkeinFields(
                         useGrouping = false,
                     )
                 }.orEmpty(),
+        exactLength = length,
     )
 }
 

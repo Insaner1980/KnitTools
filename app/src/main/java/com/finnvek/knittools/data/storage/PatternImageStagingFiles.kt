@@ -22,6 +22,7 @@ internal object PatternImageStagingFiles {
         input: InputStream,
         target: File,
         maxBytes: Long,
+        onChunk: () -> Unit = {},
     ): Long {
         target.parentFile?.mkdirs()
         var copiedBytes = 0L
@@ -30,6 +31,7 @@ internal object PatternImageStagingFiles {
             target.outputStream().use { output ->
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                 while (true) {
+                    onChunk()
                     val read = input.read(buffer)
                     if (read < 0) break
                     copiedBytes += read

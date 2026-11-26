@@ -373,7 +373,9 @@ class InsightsViewModel
         }
 
         fun selectProject(projectId: Long?) {
-            savedStateHandle["selectedProjectId"] = projectId
+            val projects = projectLoad.value.value
+            savedStateHandle["selectedProjectId"] =
+                projectId?.takeIf { selected -> projects == null || projects.any { it.id == selected } }
         }
 
         fun selectTimeRange(selectedTimeRange: TimeRange) {

@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.pattern
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.analytics.UsageAnalytics
@@ -41,6 +42,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -69,7 +71,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import java.io.File
 import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -2156,6 +2161,9 @@ class PatternAnnotationWriteFeedbackTest {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternAnnotationExportOwnershipTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
@@ -2601,6 +2609,50 @@ class PatternAnnotationExportOwnershipTest {
         }
 
     @Test
+    fun `failed annotation read after destination selection removes only an empty destination`() =
+        runTest { verifyDestinationAfterReadFailure(IOException("annotation read failed")) }
+
+    @Test
+    fun `cancelled annotation read after destination selection removes only an empty destination`() =
+        runTest { verifyDestinationAfterReadFailure(CancellationException("annotation read cancelled")) }
+
+    private fun TestScope.verifyDestinationAfterReadFailure(failure: Exception) {
+        val context =
+            mockk<Context> {
+                every { filesDir } returns temporaryFolder.root
+                every { contentResolver } returns mockk()
+            }
+        val exporter = spyk(PatternPdfExporter.createForTest(context, StandardTestDispatcher(testScheduler)))
+        val fixture = ExportFixture(this, exporter = exporter)
+        val source = temporaryFolder.newFile("source.pdf").apply { writeText("Original PDF") }
+        every { fixture.source.scheme } returns "file"
+        every { fixture.source.path } returns source.absolutePath
+        val existing = temporaryFolder.newFile("existing.pdf").apply { writeText("Existing PDF") }
+        val empty = temporaryFolder.newFile("new.pdf")
+        val annotations = fixture.route.annotationRepository
+
+        for (target in listOf(existing, empty)) {
+            coEvery { annotations.getForLayersForExport(any(), any(), any()) } returns emptyList()
+            val request = fixture.ready()
+            coEvery { annotations.getForLayersForExport(any(), any(), any()) } throws failure
+            fixture.deliver(request, destination = fileUri(target))
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            assertEquals(failure !is CancellationException, fixture.vm.uiState.value.exportFailed)
+        }
+
+        assertEquals("Original PDF", source.readText())
+        assertEquals("Existing PDF", existing.readText())
+        assertFalse("The picker-created file remained empty after export stopped", empty.exists())
+    }
+
+    private fun fileUri(file: File): Uri =
+        mockk {
+            every { scheme } returns "file"
+            every { path } returns file.absolutePath
+        }
+
+    @Test
     fun `valid progress stays busy until export returns and late progress is suppressed`() =
         runTest {
             val fixture = ExportFixture(this)
@@ -2721,9 +2773,9 @@ class PatternAnnotationExportOwnershipTest {
         val scope: TestScope,
         library: Boolean = false,
         libraryId: Long = 12L,
+        val exporter: PatternPdfExporter = mockk(relaxUnitFun = true),
     ) {
         val route = projectRoute()
-        val exporter = mockk<PatternPdfExporter>()
         val analytics = mockk<UsageAnalytics>(relaxed = true)
         val source = mockk<Uri>()
         val destination = mockk<Uri>()

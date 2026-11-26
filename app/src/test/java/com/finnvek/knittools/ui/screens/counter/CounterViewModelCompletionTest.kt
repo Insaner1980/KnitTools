@@ -217,6 +217,26 @@ class CounterViewModelCompletionTest : CounterViewModelFixture() {
         }
 
     @Test
+    fun `a committed completion closes the project even after a newer session action`() =
+        runTest {
+            val completion = CompletableDeferred<ProjectCompletionResult>()
+            coEvery { repository.completeProjectWithSessionChoice(7L, null) } coAnswers { completion.await() }
+            coEvery { repository.startSession(7L) } returns StartSessionResult.PersistenceFailure
+            val viewModel = viewModel()
+            runCurrent()
+            viewModel.completeProject()
+            runCurrent()
+            viewModel.startWorkSession()
+            runCurrent()
+            assertEquals(R.string.work_session_could_not_start, viewModel.uiState.value.workSessionErrorRes)
+
+            completion.complete(ProjectCompletionResult.Completed)
+            runCurrent()
+
+            assertNull(viewModel.uiState.value.projectId)
+        }
+
+    @Test
     fun `returning to the original project does not revive an old completion result`() =
         runTest {
             val completion = CompletableDeferred<ProjectCompletionResult>()

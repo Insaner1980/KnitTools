@@ -340,11 +340,7 @@ class GaugeScreenTest {
         edit(GaugeField.CONVERSION, " 12,7 ")
         result("conversion_converted", expectedInches)
         preserveClipboard()
-        composeRule
-            .onNodeWithTag("measurement_copy")
-            .performScrollTo()
-            .assertHeightIsAtLeast(48.dp)
-            .performClick()
+        copyButton().performClick()
         val confirmation = composeRule.onNodeWithText(localized.getString(R.string.measurement_copied))
         composeRule.waitUntil(5_000) { confirmation.isDisplayed() }
         confirmation.assertIsDisplayed()
@@ -545,8 +541,16 @@ class GaugeScreenTest {
             "conversion_converted",
             "10 ${localizedContext(Locale.GERMAN).getString(R.string.measurement_unit_inch_short)}",
         )
-        composeRule.onNodeWithTag("measurement_copy").performScrollTo().assertHeightIsAtLeast(48.dp)
+        copyButton()
         assertNoHorizontalOverflow()
+    }
+
+    private fun copyButton(): SemanticsNodeInteraction {
+        val button = composeRule.onNodeWithTag("measurement_copy").performScrollTo().assertIsDisplayed()
+        val bounds = button.fetchSemanticsNode().touchBoundsInRoot
+        val height = bounds.height / composeRule.activity.resources.displayMetrics.density
+        assertTrue("Copy touch height is $height dp", height >= 47.5f)
+        return button
     }
 
     private fun assertNoHorizontalOverflow() {

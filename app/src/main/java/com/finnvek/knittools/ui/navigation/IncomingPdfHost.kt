@@ -7,6 +7,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import com.finnvek.knittools.R
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
@@ -15,6 +16,27 @@ import com.finnvek.knittools.ui.layout.LocalWindowFolds
 import com.finnvek.knittools.ui.layout.rememberWindowFolds
 import com.finnvek.knittools.ui.screens.library.IncomingPdfSheet
 import com.finnvek.knittools.ui.screens.library.IncomingPdfSheetActions
+
+internal fun NavHostController.openIncomingPdfOutcome(outcome: IncomingPdfOutcome) {
+    when (outcome) {
+        is IncomingPdfOutcome.OpenProject -> {
+            openProjectOverview(outcome.projectId)
+        }
+
+        is IncomingPdfOutcome.OpenSavedPattern -> {
+            navigateToTopLevel(TopLevelDestination.Library)
+            navigateSingleTopTo(Screen.SavedPatternDetail(outcome.savedPatternId).route)
+        }
+
+        IncomingPdfOutcome.OpenFailed,
+        IncomingPdfOutcome.SaveFailed,
+        IncomingPdfOutcome.Downloading,
+        IncomingPdfOutcome.NotPdf,
+        -> {
+            Unit
+        }
+    }
+}
 
 /** Näyttää vastaanotetun PDF:n Tallenna ohje -sheetin ja vie tallennuksen jälkeen oikeaan näkymään. */
 @Composable

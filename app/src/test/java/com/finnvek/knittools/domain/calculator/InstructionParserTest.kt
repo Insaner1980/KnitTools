@@ -146,6 +146,38 @@ class InstructionParserTest {
     }
 
     @Test
+    fun `every nth change preserves direction and works without a preposition`() {
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 12, true),
+            InstructionParser.parse("Inc 1 st every 8th st across 96 sts"),
+        )
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 12, false),
+            InstructionParser.parse("Decrease 1 stitch in every 8th stitch over 96 stitches"),
+        )
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 12, false),
+            InstructionParser.parse("Dec 1 st every 8th st across 96 sts"),
+        )
+    }
+
+    @Test
+    fun `leading stitch count applies to every nth decrease`() {
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(80, 8, false),
+            InstructionParser.parse("80 stitches, decrease 1 stitch every 10th stitch"),
+        )
+    }
+
+    @Test
+    fun `leading stitch count applies to every nth increase`() {
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 12, true),
+            InstructionParser.parse("96 sts, inc 1 st in every 8th st"),
+        )
+    }
+
+    @Test
     fun `regex - inc abbreviated`() {
         val result = InstructionParser.parseWithRegex("INC 10 STS ACROSS 80 STS")
         assertTrue(result is ParsedInstruction.IncreaseDecrease)

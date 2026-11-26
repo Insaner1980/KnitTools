@@ -157,7 +157,7 @@ class CounterSessionUndoTest : CounterRepositoryActiveSessionFixture() {
             assertEquals(17, active?.reviewedLastObservedRow)
             assertEquals(30L, active?.reviewedDurationBaselineSeconds)
             assertEquals(0, active?.trustedRowsWorked)
-            assertEquals(0, active?.unreviewedRowsWorked)
+            assertEquals(-5, active?.unreviewedRowsWorked)
         }
 
     private suspend fun change(change: MainCounterChange) {

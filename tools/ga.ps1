@@ -1,3 +1,4 @@
+$ErrorActionPreference = 'Stop'
 $ProjectCheckCommand = "google-android-security"
 $checkerRoot = if (Test-Path -LiteralPath Env:ANDROID_CHECK_ROOT) { $env:ANDROID_CHECK_ROOT } else { "C:\Dev\Android-check" }
 if ([string]::IsNullOrWhiteSpace($checkerRoot)) {

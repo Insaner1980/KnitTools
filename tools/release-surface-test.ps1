@@ -96,6 +96,11 @@ function New-Fixture {
         }
 
     & git -C $fixture init -q | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "git init failed for fixture $Name" }
+    $gitRoot = & git -C $fixture rev-parse --show-toplevel
+    if ($LASTEXITCODE -ne 0 -or [IO.Path]::GetFullPath($gitRoot) -ne [IO.Path]::GetFullPath($fixture)) {
+        throw "git root does not match fixture $Name"
+    }
     & git -C $fixture -c core.autocrlf=false add . 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "git add failed for fixture $Name"
@@ -132,6 +137,7 @@ function Run-ReleaseSurface {
     )
 
     $pwsh = (Get-Process -Id $PID).Path
+    $PSNativeCommandUseErrorActionPreference = $false
     $output = & $pwsh -NoProfile -ExecutionPolicy Bypass -File $ScriptPath -RepoRoot $Fixture 2>&1
 
     [pscustomobject]@{
@@ -216,6 +222,28 @@ function Test-GitReadFailure {
         -Details "exit=$($result.ExitCode); expected line '$expectedLine'; expected message '$expectedMessage'; output=$($result.Output)"
 }
 
+function Test-ShortSecretRedaction {
+    $fixture = New-Fixture -Name "short-secret-redaction"
+    $probe = "q7Z2K"
+    $manifestPath = Join-Path $fixture "app/src/main/AndroidManifest.xml"
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw
+    Set-FileText -Path $manifestPath -Text ($manifest.Replace('android:allowBackup="false"', ('android:allowBackup="' + $probe + '"')))
+    $secretName = "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET"
+    $previousSecret = [Environment]::GetEnvironmentVariable($secretName, "Process")
+    try {
+        [Environment]::SetEnvironmentVariable($secretName, $probe, "Process")
+        $result = Run-ReleaseSurface -Fixture $fixture
+        Add-SelfTestResult `
+            -Condition ($result.ExitCode -eq 1 -and
+                $result.Output.Contains("[FAIL] manifest-flags:") -and
+                $result.Output.Contains("[FAIL] known-ravelry-secrets:") -and
+                !$result.Output.Contains($probe)) `
+            -Message "short known values are detected and redacted from early manifest diagnostics"
+    } finally {
+        Restore-ProcessEnvironmentVariable -Name $secretName -Value $previousSecret
+    }
+}
+
 try {
     foreach ($name in $GitLocalVariableNames) {
         $OriginalGitEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
@@ -233,6 +261,7 @@ try {
             -Details "exit=$($baseline.ExitCode); output=$($baseline.Output)"
 
         Test-SecretScanReadFailure
+        Test-ShortSecretRedaction
         Test-GitReadFailure
 
         Test-Mutation -Name "sdk23-permission" -ExpectedStatus "FAIL" -ExpectedCheck "permissions" -PassMessage "SDK-specific forbidden permission is detected" -Mutate {
@@ -505,6 +534,54 @@ try {
                 }
                 $nextVersion = ([int]$versionMatch.Groups[2].Value) + 1
                 Set-FileText -Path $path -Text ($versionPattern.Replace($text, ('${1}' + $nextVersion), 1))
+            }
+
+        Test-Mutation `
+            -Name "release-overlay-undeclared-permission" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "permissions" `
+            -PassMessage "release overlay cannot add an undeclared app permission" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/release/AndroidManifest.xml"
+                Set-FileText -Path $path -Text '<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.RECORD_AUDIO" /></manifest>'
+            }
+
+        Test-Mutation `
+            -Name "release-overlay-privacy-flag" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "manifest-flags" `
+            -PassMessage "release overlay cannot override backup protection" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/release/AndroidManifest.xml"
+                Set-FileText -Path $path -Text '<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:allowBackup="true" /></manifest>'
+            }
+
+        Test-Mutation `
+            -Name "release-sentry-catalog-alias" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "sentry-boundary" `
+            -PassMessage "release-visible Sentry library is detected through its renamed alias" `
+            -Mutate {
+                param($fixture)
+                $catalog = Join-Path $fixture "gradle/libs.versions.toml"
+                $text = Get-Content -LiteralPath $catalog -Raw
+                Set-FileText $catalog ($text.Replace('[libraries]', "`n[libraries]`n" + 'vendor-crash = { module = "io.sentry:sentry-android-core", version = "9.0.0" }'))
+                $build = Join-Path $fixture "app/build.gradle.kts"
+                Add-Content -LiteralPath $build -Value "`ndependencies {`n    releaseImplementation(libs.vendor.crash)`n}"
+            }
+
+        Test-Mutation `
+            -Name "room-schema-version-mismatch" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "room-schema" `
+            -PassMessage "schema export with a mismatched database version is rejected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/22.json"
+                $text = Get-Content -LiteralPath $path -Raw
+                Set-FileText -Path $path -Text ($text.Replace('"version": 22', '"version": 21'))
             }
 
         Test-Mutation `

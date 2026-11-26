@@ -58,6 +58,10 @@ class ProjectFolderMoveViewModel
         }
 
         fun retry() {
+            if (_state.value.readFailed) {
+                retryLoading()
+                return
+            }
             val failed = failedMove
             if (failed != null && failed.first == projectId) {
                 moveTo(failed.second)

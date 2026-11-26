@@ -345,6 +345,8 @@ class CounterViewModel
         private var sessionTotalRequestVersion = 0L
         private var pendingNotesBase: PendingNotesSave? = null
         private val notesSaveMutex = Mutex()
+        private val targetRowsSaveMutex = Mutex()
+        private var targetRowsRequestVersion = 0L
         private val projectClosedEventChannel = Channel<Long>(Channel.CONFLATED)
         val projectClosedEvents = projectClosedEventChannel.receiveAsFlow()
         private val _pendingCompletion = MutableStateFlow<ProjectCompletionCelebration?>(null)
@@ -391,7 +393,7 @@ class CounterViewModel
         private var projectYarnNoteCollectionJob: Job? = null
         private var projectDocumentCollectionJob: Job? = null
         private var allPhotosJob: Job? = null
-        private var linkedYarnIdsCache: String = ""
+        private val selectedLinkedYarnIds = MutableStateFlow("")
         private var pendingSavedPatternAttachment: SavedPattern? = null
         private var pendingProjectCounterCreation: PendingProjectCounterCreation? = null
         private var reminderCreationInFlight = false
@@ -571,23 +573,27 @@ class CounterViewModel
                 viewModelScope.launch {
                     launch {
                         repository.observeCanUndo(projectId).collect { canUndo ->
-                            _uiState.update { state ->
-                                if (state.projectId == projectId && selectionVersion == projectSelectionVersion) {
-                                    state.copy(canUndo = canUndo)
-                                } else {
-                                    state
-                                }
+                            updateSelectedProjectState(projectId, selectionVersion) {
+                                it.copy(canUndo = canUndo)
                             }
                         }
                     }
                     launch {
-                        repository.observeHasSessionsForProject(projectId).collect { hasSessions ->
-                            _uiState.update { state ->
-                                if (state.projectId == projectId && selectionVersion == projectSelectionVersion) {
-                                    state.copy(hasSessions = hasSessions, sessionsLoadedProjectId = projectId)
-                                } else {
-                                    state
-                                }
+                        var sessionsObserved = false
+                        repository.observeHasSessionsForProject(projectId).collectLatest { hasSessions ->
+                            updateSelectedProjectState(projectId, selectionVersion) {
+                                it.copy(hasSessions = hasSessions, sessionsLoadedProjectId = projectId)
+                            }
+                            if (sessionsObserved && selectionVersion == projectSelectionVersion) {
+                                loadTotalSessionMinutes(projectId)
+                            }
+                            sessionsObserved = true
+                        }
+                    }
+                    launch {
+                        combine(selectedLinkedYarnIds, savedYarnCards, ::summarizeLinkedYarns).collect { yarns ->
+                            updateSelectedProjectState(projectId, selectionVersion) {
+                                it.copy(linkedYarns = yarns)
                             }
                         }
                     }
@@ -608,6 +614,20 @@ class CounterViewModel
                             )
                     }
                 }
+        }
+
+        private fun updateSelectedProjectState(
+            projectId: Long,
+            selectionVersion: Long,
+            transform: (CounterUiState) -> CounterUiState,
+        ) {
+            _uiState.update { state ->
+                if (state.projectId == projectId && selectionVersion == projectSelectionVersion) {
+                    transform(state)
+                } else {
+                    state
+                }
+            }
         }
 
         private suspend fun handleSelectedProjectObservation(
@@ -653,10 +673,7 @@ class CounterViewModel
             if (countChanged) {
                 syncRepeatSectionCounters(project.count, _uiState.value.projectCounters, persist = true)
             }
-            if (linkedYarnIdsCache != project.yarnCardIds) {
-                linkedYarnIdsCache = project.yarnCardIds
-                loadLinkedYarns(project.id, project.yarnCardIds)
-            }
+            selectedLinkedYarnIds.value = project.yarnCardIds
             if (previousObservedProject != null && previousObservedProject.count != project.count) {
                 syncWidget(project.id, project.name, project.count)
             }
@@ -712,33 +729,24 @@ class CounterViewModel
             }
         }
 
-        private suspend fun loadLinkedYarns(
-            projectId: Long,
+        private fun summarizeLinkedYarns(
             yarnCardIds: String,
-        ) {
-            if (yarnCardIds.isBlank()) {
-                _uiState.update { state ->
-                    if (state.projectId == projectId) state.copy(linkedYarns = emptyList()) else state
-                }
-                return
-            }
+            cards: List<YarnCard>,
+        ): List<LinkedYarnSummary> {
             val ids = parseYarnCardIds(yarnCardIds)
-            val cardsById = yarnCardRepository.getCards(ids).associateBy { it.id }
-            val yarns =
-                ids.mapNotNull { id ->
-                    cardsById[id]?.let { card ->
-                        val colorLine =
-                            listOfNotNull(
-                                card.colorName.takeIf { it.isNotBlank() },
-                                card.colorNumber.takeIf { it.isNotBlank() }?.let {
-                                    context.getString(R.string.yarn_color_number_short, it)
-                                },
-                            ).joinToString(" ").ifBlank { null }
-                        LinkedYarnSummary(id, card.displayName(::fallbackYarnCardName), colorLine)
-                    }
+            if (ids.isEmpty()) return emptyList()
+            val cardsById = cards.associateBy { it.id }
+            return ids.mapNotNull { id ->
+                cardsById[id]?.let { card ->
+                    val colorLine =
+                        listOfNotNull(
+                            card.colorName.takeIf { it.isNotBlank() },
+                            card.colorNumber.takeIf { it.isNotBlank() }?.let {
+                                context.getString(R.string.yarn_color_number_short, it)
+                            },
+                        ).joinToString(" ").ifBlank { null }
+                    LinkedYarnSummary(id, card.displayName(::fallbackYarnCardName), colorLine)
                 }
-            _uiState.update { state ->
-                if (state.projectId == projectId) state.copy(linkedYarns = yarns) else state
             }
         }
 
@@ -891,7 +899,7 @@ class CounterViewModel
             projectSelectionVersion++
             if (_uiState.value.projectId != project.id) invalidateProjectCompletion()
             if (pendingReactivation?.projectId != project.id) dismissPendingReactivation()
-            linkedYarnIdsCache = project.yarnCardIds
+            selectedLinkedYarnIds.value = project.yarnCardIds
 
             saveSelectedProject(project.id)
 
@@ -904,7 +912,6 @@ class CounterViewModel
             observeProjectYarnNotes(project.id)
             observeProjectDocuments(project.id)
             syncWidget()
-            loadLinkedYarns(project.id, project.yarnCardIds)
             attachPendingSavedPatternIfReady()
             loadTotalSessionMinutes(project.id)
         }
@@ -1259,6 +1266,7 @@ class CounterViewModel
             val summary = _uiState.value.sessionStopSummary ?: return
             val active = _uiState.value.activeSession ?: return
             val projectId = active.projectId
+            val selectionVersion = projectSelectionVersion
             launchWorkSessionAction {
                 when (
                     val result =
@@ -1284,9 +1292,7 @@ class CounterViewModel
                     }
 
                     StopSessionResult.StaleAction -> {
-                        _uiState.update {
-                            if (it.sessionStopSummary === summary) it.copy(sessionStopSummary = null) else it
-                        }
+                        refreshRejectedStopSummary(summary, active, selectionVersion)
                     }
 
                     StopSessionResult.Discarded -> {
@@ -1300,6 +1306,49 @@ class CounterViewModel
                     StopSessionResult.HistoryLimitReached -> {
                         showWorkSessionError(R.string.work_session_history_full)
                     }
+                }
+            }
+        }
+
+        private suspend fun refreshRejectedStopSummary(
+            summary: SessionStopSummary,
+            expectedSession: ActiveWorkSession,
+            selectionVersion: Long,
+        ) {
+            if (_uiState.value.sessionStopSummary !== summary) return
+            val refreshed =
+                try {
+                    repository.refreshActiveSession()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    reportStopSummaryRefreshFailure(summary, selectionVersion)
+                    return
+                }
+            val state = _uiState.value
+            if (state.sessionStopSummary !== summary || selectionVersion != projectSelectionVersion) return
+            val currentSession = if (state.activeSession == expectedSession) refreshed else state.activeSession
+            if (currentSession?.sessionToken != summary.sessionToken) {
+                clearSessionStopSummary(summary.sessionToken)
+            } else if (currentSession.needsRecoveryReview) {
+                handleStopRecoveryReview(summary, expectedSession, currentSession)
+            } else {
+                _uiState.update { it.copy(activeSession = currentSession) }
+                stopWorkSession()
+            }
+        }
+
+        private fun reportStopSummaryRefreshFailure(
+            summary: SessionStopSummary,
+            selectionVersion: Long,
+        ) {
+            if (_uiState.value.sessionStopSummary !== summary || selectionVersion != projectSelectionVersion) return
+            clearSessionStopSummary(summary.sessionToken)
+            showWorkSessionError(R.string.work_session_could_not_save) {
+                if (selectionVersion == projectSelectionVersion &&
+                    _uiState.value.activeSession?.sessionToken == summary.sessionToken
+                ) {
+                    stopWorkSession()
                 }
             }
         }
@@ -1659,12 +1708,15 @@ class CounterViewModel
             selectionVersion: Long,
             result: ProjectCompletionResult,
         ) {
-            if (requestVersion != projectCompletionVersion || _uiState.value.projectId != projectId) return
+            if (selectionVersion != projectSelectionVersion || _uiState.value.projectId != projectId) return
+            val completed =
+                result == ProjectCompletionResult.Completed ||
+                    result is ProjectCompletionResult.CompletedNow
+            if (!completed && requestVersion != projectCompletionVersion) return
             when (result) {
                 ProjectCompletionResult.Completed,
                 is ProjectCompletionResult.CompletedNow,
                 -> {
-                    if (selectionVersion != projectSelectionVersion) return
                     if (result is ProjectCompletionResult.CompletedNow) {
                         analytics.track(UsageEvent.PROJECT_COMPLETED)
                         _pendingCompletion.value =
@@ -1745,27 +1797,28 @@ class CounterViewModel
             val projectId = _uiState.value.projectId ?: return
             if (projectId != expectedProjectId || (target != null && target !in 1..MAX_TARGET_ROWS)) return
             val selectionVersion = projectSelectionVersion
+            val requestVersion = ++targetRowsRequestVersion
             _uiState.update { it.copy(targetRows = target) }
             launchProjectContentMutation {
-                val saved =
-                    tryProjectWrite {
-                        repository.setTargetRows(projectId, target)
-                        analytics.track(
-                            UsageEvent.COUNTER_TARGET_CHANGED,
-                            if (target != null) {
-                                UsageDetail.ENABLED
-                            } else {
-                                UsageDetail.DISABLED
-                            },
-                        )
-                        true
+                targetRowsSaveMutex.withLock {
+                    val saved =
+                        tryProjectWrite {
+                            repository.setTargetRows(projectId, target)
+                            analytics.track(
+                                UsageEvent.COUNTER_TARGET_CHANGED,
+                                if (target != null) UsageDetail.ENABLED else UsageDetail.DISABLED,
+                            )
+                            true
+                        }
+                    val persisted = repository.getProject(projectId) ?: return@withLock false
+                    if (requestVersion == targetRowsRequestVersion &&
+                        selectionVersion == projectSelectionVersion && _uiState.value.projectId == projectId
+                    ) {
+                        _uiState.update { it.copy(targetRows = persisted.targetRows) }
+                        if (saved) syncWidget()
                     }
-                val persisted = repository.getProject(projectId) ?: return@launchProjectContentMutation false
-                if (selectionVersion == projectSelectionVersion && _uiState.value.projectId == projectId) {
-                    _uiState.update { it.copy(targetRows = persisted.targetRows) }
-                    if (saved) syncWidget()
+                    saved
                 }
-                saved
             }
         }
 
@@ -2454,9 +2507,8 @@ class CounterViewModel
             sourceUri: Uri,
             expectedProjectId: Long? = savedStateHandle[KEY_PROGRESS_PHOTO_CREATION_PROJECT_ID],
         ): Boolean {
-            if (!canFinishProgressPhotoCreation()) return false
             val projectId = expectedProjectId ?: return false
-            if (!hasExternalResultOwner(projectId)) return false
+            if (!canFinishProgressPhotoCreation(projectId) || !hasExternalResultOwner(projectId)) return false
             launchPhotoOperation {
                 var handedToRepository = false
                 try {
@@ -2493,9 +2545,12 @@ class CounterViewModel
             savedStateHandle.remove<Long>(KEY_PROGRESS_PHOTO_CREATION_PROJECT_ID)
         }
 
-        private fun canFinishProgressPhotoCreation(): Boolean =
+        private fun canFinishProgressPhotoCreation(projectId: Long): Boolean =
             proManager.hasFeature(ProFeature.PROGRESS_PHOTOS) ||
-                savedStateHandle.get<Boolean>(KEY_PROGRESS_PHOTO_CREATION_AUTHORIZED) == true
+                (
+                    savedStateHandle.get<Boolean>(KEY_PROGRESS_PHOTO_CREATION_AUTHORIZED) == true &&
+                        savedStateHandle.get<Long>(KEY_PROGRESS_PHOTO_CREATION_PROJECT_ID) == projectId
+                )
 
         private fun hasExternalResultOwner(projectId: Long): Boolean =
             _uiState.value.projectId == projectId ||
@@ -2508,7 +2563,7 @@ class CounterViewModel
             projectId: Long,
             onCreated: (PhotoCaptureTarget?) -> Unit,
         ) {
-            if (!canFinishProgressPhotoCreation() || !hasExternalResultOwner(projectId)) {
+            if (!canFinishProgressPhotoCreation(projectId) || !hasExternalResultOwner(projectId)) {
                 onCreated(null)
                 return
             }
@@ -2590,32 +2645,56 @@ class CounterViewModel
             _uiState.update { it.copy(notes = notes) }
             launchProjectContentMutation {
                 notesSaveMutex.withLock {
-                    val savedProject =
-                        repository
-                            .saveProjectNotes(
-                                id = id,
-                                baseNotes = pendingSave.baseNotes,
-                                requestedNotes = notes,
-                            ).let { result ->
-                                (result as? ProjectNotesSaveResult.Saved)?.project ?: return@withLock false
-                            }
+                    val result =
+                        repository.saveProjectNotes(
+                            id = id,
+                            baseNotes = pendingSave.baseNotes,
+                            requestedNotes = notes,
+                        )
+                    if (result !is ProjectNotesSaveResult.Saved) {
+                        restoreNotesAfterRejectedSave(id, pendingSave, request, result)
+                        return@withLock false
+                    }
                     pendingSave.baseNotes = notes
                     _uiState.update { currentState ->
                         if (currentState.projectId != id || selectionVersion != projectSelectionVersion) {
                             return@update currentState
                         }
-                        val isLatestDraft =
-                            pendingNotesBase === pendingSave &&
-                                pendingSave.latestRequest === request &&
-                                currentState.notes == notes
-                        if (!isLatestDraft) return@update currentState
+                        if (!isLatestNotesSave(pendingSave, request) || currentState.notes != notes) {
+                            return@update currentState
+                        }
                         pendingNotesBase = null
-                        currentState.copy(notes = savedProject.notes)
+                        currentState.copy(notes = result.project.notes)
                     }
                     true
                 }
             }
         }
+
+        private fun restoreNotesAfterRejectedSave(
+            projectId: Long,
+            pendingSave: PendingNotesSave,
+            request: Any,
+            result: ProjectNotesSaveResult,
+        ) {
+            if (result == ProjectNotesSaveResult.PersistenceFailure ||
+                !isLatestNotesSave(pendingSave, request) ||
+                pendingSave.selectionVersion != projectSelectionVersion ||
+                _uiState.value.projectId != projectId
+            ) {
+                return
+            }
+            pendingNotesBase = null
+            val stored = lastConfirmedCounterProject?.takeIf { it.id == projectId }?.notes ?: pendingSave.baseNotes
+            _uiState.update { it.copy(notes = stored) }
+        }
+
+        private fun isLatestNotesSave(
+            pendingSave: PendingNotesSave,
+            request: Any,
+        ): Boolean =
+            pendingNotesBase === pendingSave &&
+                pendingSave.latestRequest === request
 
         fun setProjectDetails(
             name: String,

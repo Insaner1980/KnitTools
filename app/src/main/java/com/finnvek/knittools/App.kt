@@ -21,6 +21,7 @@ import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -77,6 +78,12 @@ class App : Application() {
     @IoDispatcher
     lateinit var ioDispatcher: CoroutineDispatcher
 
+    private val pendingSharedPdfAtStartup = CompletableDeferred<String?>()
+
+    internal fun onIncomingPdfStateRestored(pendingPdfUri: String?) {
+        pendingSharedPdfAtStartup.complete(pendingPdfUri)
+    }
+
     override fun onCreate() {
         super.onCreate()
         SentryInit.init(this)
@@ -89,8 +96,7 @@ class App : Application() {
                     .map { it.usageAnalyticsEnabled to it.usageAnalyticsGeneration }
                     .distinctUntilChanged()
                     .collect { (enabled, generation) ->
-                        analytics.setEnabled(enabled, generation)
-                        analytics.initialConsentLoaded.complete(Unit)
+                        analytics.applyStoredConsent(enabled, generation)
                     }
             }
         }
@@ -109,7 +115,9 @@ class App : Application() {
                         .draft
                         .first()
                         ?.pdfUri
-                savedPatternRepository.get().pruneUnreferencedStagedPdfs(keepUris = setOfNotNull(onboardingPdf))
+                savedPatternRepository.get().pruneUnreferencedStagedPdfs(
+                    keepUris = setOfNotNull(onboardingPdf, pendingSharedPdfAtStartup.await()),
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

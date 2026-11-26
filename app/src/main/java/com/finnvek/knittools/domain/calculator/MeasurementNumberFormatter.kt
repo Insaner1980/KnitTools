@@ -44,13 +44,14 @@ object MeasurementNumberFormatter {
         locale: Locale,
     ): String {
         require(valuePercent.isFinite())
+        val roundedPercent = BigDecimal.valueOf(valuePercent).setScale(1, RoundingMode.HALF_UP)
         return NumberFormat
             .getPercentInstance(locale)
             .apply {
                 minimumFractionDigits = 0
                 maximumFractionDigits = 1
                 roundingMode = RoundingMode.HALF_UP
-                if (valuePercent > 0.0 && this is DecimalFormat) positivePrefix = "+$positivePrefix"
-            }.format(valuePercent / 100.0)
+                if (roundedPercent.signum() > 0 && this is DecimalFormat) positivePrefix = "+$positivePrefix"
+            }.format(roundedPercent.movePointLeft(2))
     }
 }

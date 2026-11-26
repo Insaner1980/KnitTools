@@ -5,8 +5,8 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.finnvek.knittools.data.datastore.editPreferencesSafely
 import com.finnvek.knittools.data.datastore.readPreferencesOrNull
-import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
@@ -52,7 +52,7 @@ class DataStorePurchaseOwnershipCache
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal abstract class PurchaseOwnershipCacheModule {
-    @Binds
-    abstract fun bindPurchaseOwnershipCache(cache: DataStorePurchaseOwnershipCache): PurchaseOwnershipCache
+internal object PurchaseOwnershipCacheModule {
+    @Provides
+    fun providePurchaseOwnershipCache(cache: DataStorePurchaseOwnershipCache): PurchaseOwnershipCache = cache
 }

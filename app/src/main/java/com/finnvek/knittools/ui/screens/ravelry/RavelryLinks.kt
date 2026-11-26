@@ -47,9 +47,12 @@ internal fun isRavelryPurchaseUrl(
     return isRavelryHost(normalizedHost) &&
         (
             normalizedHost.startsWith("checkout.") ||
-                path.orEmpty().split('/').any { it.equals("checkout", ignoreCase = true) }
+                path.orEmpty().split('/').any { it.lowercase(Locale.US) in PURCHASE_PATH_SEGMENTS }
         )
 }
+
+// Laitteella 2026-11-25 havaitut ostolomakkeet: Buy now ja ostoskori (checkout) sekä lahjaosto (purchase_gift).
+private val PURCHASE_PATH_SEGMENTS = setOf("checkout", "purchase_gift")
 
 /** Jaettu tai tallennettu kassalinkki: aloitusosoite ei kulje navigointisuodattimen kautta. */
 internal fun isRavelryPurchasePage(url: String): Boolean {

@@ -63,6 +63,29 @@ class OnboardingScreenTest(
     private var finished = 0
     private val quote = SelectedOneTimeOffer("9,99 €", "test-offer", 9_990_000, "EUR")
 
+    @Test fun projectNameAndCraftAreDisabledWhilePdfIsBeingCopied() {
+        val busy = mutableStateOf(false)
+        draft.value = draft.value.copy(step = OnboardingStep.Project, name = "My project")
+        compose.setContent {
+            CompositionLocalProvider(LocalContext provides context, LocalConfiguration provides configuration) {
+                KnitToolsTheme {
+                    JourneyProject(draft.value, busy.value, OnboardingActions(edit = { draft.value = it(draft.value) }))
+                }
+            }
+        }
+
+        val nameField = compose.onNodeWithTag("onboarding_project_name")
+        val crochetOption = compose.onNodeWithText(text(R.string.craft_type_crochet))
+        nameField.assertIsEnabled()
+        crochetOption.assertIsEnabled()
+        compose.runOnIdle { busy.value = true }
+        nameField.assertIsNotEnabled()
+        crochetOption.assertIsNotEnabled()
+        compose.runOnIdle { busy.value = false }
+        nameField.assertIsEnabled()
+        crochetOption.assertIsEnabled()
+    }
+
     @Test fun leavingCraftCancelsDelayedAdvance() {
         draft.value = draft.value.copy(step = OnboardingStep.Craft)
         var advances = 0

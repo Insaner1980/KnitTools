@@ -78,9 +78,17 @@ class InAppUpdateManager
                 .addOnSuccessListener { info ->
                     if (resumeCheck !== request) return@addOnSuccessListener
                     resumeCheck = null
-                    if (info.installStatus() == InstallStatus.DOWNLOADED) {
+                    val status = info.installStatus()
+                    if (status == InstallStatus.DOWNLOADED) {
                         notifyUpdateDownloaded()
                     } else {
+                        if (status == InstallStatus.CANCELED ||
+                            status == InstallStatus.FAILED ||
+                            status == InstallStatus.INSTALLED
+                        ) {
+                            updateFlowInProgress = false
+                            completingPromptId = 0L
+                        }
                         _downloadedUpdatePromptId.value = 0L
                     }
                 }

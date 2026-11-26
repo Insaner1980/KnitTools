@@ -160,9 +160,9 @@ class ProjectCounterLogicTest {
 
     @Test
     fun `count-up ignores stale repeating metadata`() {
-        val result = ProjectCounterLogic.increment(counter(count = 7, stepSize = 1, repeatAt = 8))
+        val result = ProjectCounterLogic.increment(counter(count = 8, stepSize = 1, repeatAt = 8))
 
-        assertEquals(8, result.count)
+        assertEquals(9, result.count)
     }
 
     @Test

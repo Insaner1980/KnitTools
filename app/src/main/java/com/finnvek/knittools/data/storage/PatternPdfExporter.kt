@@ -8,6 +8,7 @@ import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -74,6 +75,19 @@ class PatternPdfExporter private constructor(
                 copyToDestination(tempFile, destinationUri)
             } finally {
                 if (tempFile.exists() && !tempFile.delete()) tempFile.deleteOnExit()
+            }
+        }
+    }
+
+    internal suspend fun removeEmptyDestination(
+        sourceUri: Uri,
+        destinationUri: Uri,
+    ) = withContext(NonCancellable) {
+        withContext(ioDispatcher) {
+            if (runCatching { requireDifferentDestination(sourceUri, destinationUri) }.isSuccess &&
+                IncompleteDestination.isEmpty(context, destinationUri)
+            ) {
+                IncompleteDestination.deleteQuietly(context, destinationUri)
             }
         }
     }

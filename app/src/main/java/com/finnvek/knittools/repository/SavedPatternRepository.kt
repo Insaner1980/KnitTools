@@ -306,8 +306,10 @@ class SavedPatternRepository
             val candidates =
                 withContext(ioDispatcher) {
                     val keptFiles =
-                        keepUris.mapNotNullTo(mutableSetOf()) { uri ->
-                            AppFileStorage.resolveAppOwnedFile(context, uri.toUri())?.canonicalFile
+                        buildSet(keepUris.size) {
+                            keepUris.mapNotNullTo(this) { uri ->
+                                AppFileStorage.resolveAppOwnedFile(context, uri.toUri())?.canonicalFile
+                            }
                         }
                     File(context.filesDir, STAGED_PDF_DIRECTORY)
                         .listFiles { file ->

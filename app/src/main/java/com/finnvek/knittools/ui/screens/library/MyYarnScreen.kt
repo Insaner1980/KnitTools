@@ -129,9 +129,9 @@ fun MyYarnScreen(
     var openAddPending by rememberSaveable { mutableStateOf(openAddOnEntry) }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
     var actionAwaitingEntitlement by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
-    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
-    var lastHandledSaveErrorId by rememberSaveable { mutableLongStateOf(state.saveErrorId) }
-    var lastHandledSaveSuccessId by rememberSaveable { mutableLongStateOf(state.saveSuccessId) }
+    var lastHandledDeleteErrorId by remember { mutableLongStateOf(state.deleteErrorId) }
+    var lastHandledSaveErrorId by remember { mutableLongStateOf(state.saveErrorId) }
+    var lastHandledSaveSuccessId by remember { mutableLongStateOf(state.saveSuccessId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val requestAddYarn = {
@@ -189,7 +189,7 @@ fun MyYarnScreen(
         actions.onExitSelectMode()
     }
 
-    if (showDeleteConfirmDialog) {
+    if (showDeleteConfirmDialog && state.selectedYarnIds.isNotEmpty()) {
         MyYarnDeleteDialog(
             selectedCount = state.selectedYarnIds.size,
             onConfirm = {
@@ -198,6 +198,9 @@ fun MyYarnScreen(
             },
             onDismiss = { showDeleteConfirmDialog = false },
         )
+    }
+    LaunchedEffect(state.selectedYarnIds.isEmpty()) {
+        if (state.selectedYarnIds.isEmpty()) showDeleteConfirmDialog = false
     }
 
     if (showManualYarnSheet) {

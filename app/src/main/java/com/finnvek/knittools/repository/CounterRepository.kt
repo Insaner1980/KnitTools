@@ -117,6 +117,16 @@ sealed interface ProjectReactivationResult {
     data object PersistenceFailure : ProjectReactivationResult
 }
 
+internal class CancelledNotesMerge(
+    val previousNotes: String,
+    val mergedNotes: String,
+    cause: CancellationException,
+) : CancellationException("Cancelled while saving merged notes") {
+    init {
+        initCause(cause)
+    }
+}
+
 sealed interface ProjectNotesSaveResult {
     data class Saved(
         val project: CounterProject,
@@ -230,6 +240,9 @@ class CounterRepository
             projectId: Long,
             localPdfUri: String,
         ): Boolean = projectDocumentRepository.getDocuments(projectId).any { it.localPdfUri == localPdfUri }
+
+        internal suspend fun deleteUnreferencedPatternPdf(localPdfUri: String) =
+            savedPatternRepository.deleteLocalPatternFileIfUnused(localPdfUri)
 
         fun observeProject(id: Long): Flow<CounterProject?> =
             dao
@@ -537,8 +550,9 @@ class CounterRepository
             baseNotes: String,
             requestedNotes: String,
             creationAuthorized: Boolean = false,
-        ): ProjectNotesSaveResult =
-            try {
+        ): ProjectNotesSaveResult {
+            var pendingMerge: Pair<String, String>? = null
+            return try {
                 val notesEntitled = prepareNotesAccess(id, requestedNotes, creationAuthorized)
                 transactionRunner.run {
                     val current =
@@ -560,6 +574,9 @@ class CounterRepository
                         )
                     val updatedAt = System.currentTimeMillis()
                     val hasNotes = notesToSave.isNotBlank()
+                    if (notesToSave != requestedNotes && notesToSave != current.notes) {
+                        pendingMerge = current.notes to notesToSave
+                    }
                     dao.updateNotes(id, notesToSave, updatedAt, hasNotes)
                     ProjectNotesSaveResult.Saved(
                         current.copy(
@@ -570,10 +587,12 @@ class CounterRepository
                     )
                 }
             } catch (cancelled: CancellationException) {
+                pendingMerge?.let { (previous, merged) -> throw CancelledNotesMerge(previous, merged, cancelled) }
                 throw cancelled
             } catch (_: Exception) {
                 ProjectNotesSaveResult.PersistenceFailure
             }
+        }
 
         private suspend fun prepareNotesAccess(
             id: Long,
@@ -1590,6 +1609,9 @@ class CounterRepository
                         recoveryPromptShown = false,
                         updatedAtWallMillis = now.wallClockMillis,
                     )
+                if (evaluateActiveSessionTime(updated.timingAnchors(), now) !is ActiveSessionTimeEvaluation.Trusted) {
+                    return@runSessionMutation RecoveryResolutionResult.PersistenceFailure
+                }
                 sessionDao.updateActiveSession(updated)
                 RecoveryResolutionResult.Continued(updated.toDomain())
             }
@@ -1992,7 +2014,10 @@ class CounterRepository
                                 trustedLastObservedRow = active.reviewedLastObservedRow,
                                 trustedRowsWorked = active.reviewedRowsWorked,
                                 pendingRowsWorked =
-                                    saturatingRows(active.pendingRowsWorked, active.unreviewedRowsWorked),
+                                    saturatingRows(
+                                        active.trustedRowsWorked,
+                                        active.pendingRowsWorked,
+                                    ) - active.reviewedRowsWorked,
                                 unreviewedRowsWorked = 0,
                             )
                         } else {
@@ -2050,7 +2075,7 @@ class CounterRepository
             if (synchronized.projectId != projectId) return
             if (undoHistory == null) {
                 dao.updateLatestHistorySessionUndo(projectId, CounterSessionUndo.capture(synchronized).encode())
-            } else if (restoreSessionRowsForUndo(synchronized, now, newRow, undoneReset, undoHistory)) {
+            } else if (restoreSessionRowsForUndo(synchronized, now, newRow, undoHistory)) {
                 return
             }
             val delta = newRow.toLong() - synchronized.lastObservedRow.toLong()
@@ -2059,7 +2084,9 @@ class CounterRepository
                     if (undoneReset) {
                         positiveRowDelta(synchronized.trustedLastObservedRow, newRow)
                     } else {
-                        adjustRowsWorked(synchronized.pendingRowsWorked, delta)
+                        val acceptedRows =
+                            saturatingRows(synchronized.trustedRowsWorked, synchronized.pendingRowsWorked)
+                        adjustRowsWorked(acceptedRows, delta) - synchronized.trustedRowsWorked
                     }
                 sessionDao.updateActiveSession(
                     synchronized.copy(
@@ -2071,15 +2098,12 @@ class CounterRepository
                 return
             }
             val checkpointed = checkpointTrustedSession(synchronized, now)
-            val unreviewedRowsWorked =
-                if (undoneReset) {
-                    positiveRowDelta(checkpointed.reviewedLastObservedRow, newRow)
-                } else {
-                    adjustRowsWorked(checkpointed.unreviewedRowsWorked, delta)
-                }
             val trustedRowsWorked =
                 if (undoneReset) {
-                    saturatingRows(checkpointed.reviewedRowsWorked, unreviewedRowsWorked)
+                    saturatingRows(
+                        checkpointed.reviewedRowsWorked,
+                        positiveRowDelta(checkpointed.reviewedLastObservedRow, newRow),
+                    )
                 } else {
                     adjustRowsWorked(checkpointed.trustedRowsWorked, delta)
                 }
@@ -2088,7 +2112,7 @@ class CounterRepository
                     lastObservedRow = newRow,
                     trustedLastObservedRow = newRow,
                     trustedRowsWorked = trustedRowsWorked,
-                    unreviewedRowsWorked = unreviewedRowsWorked,
+                    unreviewedRowsWorked = trustedRowsWorked - checkpointed.reviewedRowsWorked,
                     updatedAtWallMillis = now.wallClockMillis,
                 ),
             )
@@ -2098,25 +2122,21 @@ class CounterRepository
             active: ActiveSessionEntity,
             now: SessionTimeSnapshot,
             newRow: Int,
-            undoneReset: Boolean,
             undoHistory: CounterHistoryEntity,
         ): Boolean {
             val snapshot = undoHistory.sessionUndoJson?.let(CounterSessionUndo::decodeOrNull)
             val checkpointed = checkpointTrustedSession(active, now)
             val restored = snapshot?.restoreRows(checkpointed)
-            val resetBeforeSession =
-                when {
-                    !undoneReset -> false
-                    snapshot != null -> snapshot.sessionToken != active.sessionToken
-                    else -> undoHistory.timestamp < active.startedAtWallMillis
-                }
+            val changeBeforeSession =
+                snapshot?.let { it.sessionToken != active.sessionToken }
+                    ?: (undoHistory.timestamp < active.startedAtWallMillis)
             val updated =
                 when {
                     restored != null -> {
                         restored
                     }
 
-                    resetBeforeSession -> {
+                    changeBeforeSession -> {
                         checkpointed.copy(
                             trustedLastObservedRow =
                                 if (checkpointed.recoveryReason == null) {

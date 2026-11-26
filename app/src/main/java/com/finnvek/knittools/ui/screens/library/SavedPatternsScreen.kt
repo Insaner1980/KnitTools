@@ -98,7 +98,7 @@ fun SavedPatternsScreen(
 ) {
     val listState = rememberLazyListState()
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
-    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
+    var lastHandledDeleteErrorId by remember { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
 

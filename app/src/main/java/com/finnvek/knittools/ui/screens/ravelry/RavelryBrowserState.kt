@@ -40,11 +40,14 @@ internal class RavelryBrowserState(
         private set
     var canGoBack by mutableStateOf(false)
         private set
-    private var fallbackUrl =
+
+    /** Viimeisin kassan ulkopuolinen Ravelry-sivu; lomakkeella aloitettu osto jatkuu siitä selaimessa. */
+    var fallbackUrl =
         restored
             ?.takeIf { it.getString(REQUEST_KEY) == requestId }
             ?.getString(FALLBACK_KEY)
             ?.let(::restorableRavelryPageOrNull) ?: RAVELRY_PATTERN_SEARCH_URL
+        private set
 
     fun visited(
         view: WebView,

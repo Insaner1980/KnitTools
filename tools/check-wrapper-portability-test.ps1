@@ -87,7 +87,14 @@ exit $LASTEXITCODE
     Write-Output "check-wrapper-portability-test: $count passed; isolated targets only"
 } finally {
     $resolved = [IO.Path]::GetFullPath($fixture)
-    $temporary = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
+    $separator = [IO.Path]::DirectorySeparatorChar
+    $temporary = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd($separator) + $separator
     if (-not $resolved.StartsWith($temporary, [StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe fixture cleanup path' }
-    if (Test-Path -LiteralPath $resolved) { Remove-Item -LiteralPath $resolved -Recurse -Force }
+    if (Test-Path -LiteralPath $resolved) {
+        if ((Get-Item -LiteralPath $resolved).Attributes.HasFlag([IO.FileAttributes]::ReparsePoint) -or
+            @(Get-ChildItem -LiteralPath $resolved -Recurse -Force -Attributes ReparsePoint).Count -gt 0) {
+            throw 'Unsafe fixture cleanup path'
+        }
+        Remove-Item -LiteralPath $resolved -Recurse -Force
+    }
 }

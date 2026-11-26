@@ -80,6 +80,7 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.domain.model.canGoBack
+import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.illustrationHeightFor
@@ -134,7 +135,7 @@ fun OnboardingRoute(
         OnboardingPriceState(
             ready = ready,
             pro = pro,
-            trialUnavailable = state.trialUnavailable || trial.clockTampered,
+            trialUnavailable = state.trialUnavailable || ProPolicyTestControl.currentTrialState(trial).clockTampered,
             offer = previewOffer ?: offer,
             productStatus = if (previewOffer != null) BillingProductStatus.Available else productStatus,
             purchaseBusy = purchaseBusy,

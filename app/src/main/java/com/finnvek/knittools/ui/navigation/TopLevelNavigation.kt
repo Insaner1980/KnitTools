@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.navigation
 
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 
 // Keep tab navigation on list/detail routes, but hide both presentations for full-screen content.
 private val HIDE_NAVIGATION_ROUTES =
@@ -16,6 +17,12 @@ private val HIDE_NAVIGATION_ROUTES =
 
 internal fun showsTopLevelNavigation(route: String?): Boolean =
     route !in HIDE_NAVIGATION_ROUTES && route != Screen.Backup.route
+
+internal fun NavHostController.navigateSingleTopTo(route: String) {
+    navigate(route) {
+        launchSingleTop = true
+    }
+}
 
 internal fun NavController.navigateToTopLevel(destination: TopLevelDestination) {
     val currentTopLevelRoute =

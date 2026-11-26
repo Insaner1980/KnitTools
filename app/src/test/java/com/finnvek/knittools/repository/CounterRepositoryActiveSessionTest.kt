@@ -5,6 +5,7 @@ import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.CounterSessionUndo
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
@@ -415,6 +416,24 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
         }
 
     @Test
+    fun `adding reviewed recovery time requires usable new boot identity`() =
+        runTest {
+            val started = repository.startSession(7L) as StartSessionResult.Started
+            timeSource.hasBootIdentity = false
+            val recovery = requireNotNull(repository.refreshActiveSession())
+
+            assertEquals(
+                RecoveryResolutionResult.PersistenceFailure,
+                repository.addRecoveryInterval(
+                    started.session.sessionToken,
+                    requireNotNull(recovery.recoveryIntervalToken),
+                    20L,
+                ),
+            )
+            assertEquals(recovery, repository.refreshActiveSession())
+        }
+
+    @Test
     fun `long review spans automatic checkpoints and moves unreviewed rows to pending`() =
         runTest {
             var project = CounterProjectEntity(id = 7L, name = "Cardigan", count = 12, stepSize = 1)
@@ -706,6 +725,53 @@ class CounterRepositorySessionRowChangeTest : CounterRepositoryActiveSessionFixt
         }
 
     @Test
+    fun `undoing a decrement before the session does not add worked rows`() =
+        runTest {
+            assertUndoOfEarlierDecrementDoesNotAddWorkedRows(timestamp = 999L, sessionUndoJson = null)
+        }
+
+    @Test
+    fun `undoing a decrement from another session does not add worked rows`() =
+        runTest {
+            val earlier = repository.startSession(7L) as StartSessionResult.Started
+            val undoSnapshot = CounterSessionUndo.capture(requireNotNull(active)).encode()
+            assertEquals(StopSessionResult.Discarded, repository.discardActiveSession(earlier.session.sessionToken))
+
+            assertUndoOfEarlierDecrementDoesNotAddWorkedRows(timestamp = 1_000L, sessionUndoJson = undoSnapshot)
+        }
+
+    private suspend fun assertUndoOfEarlierDecrementDoesNotAddWorkedRows(
+        timestamp: Long,
+        sessionUndoJson: String?,
+    ) {
+        var project = CounterProjectEntity(id = 7L, name = "Cardigan", count = 11)
+        coEvery { projectDao.getProject(7L) } answers { project }
+        coEvery { projectDao.updateCount(7L, any(), any()) } answers {
+            project = project.copy(count = secondArg())
+        }
+        coEvery { projectDao.getLatestHistory(7L) } returns
+            CounterHistoryEntity(
+                id = 1L,
+                projectId = 7L,
+                action = "decrement",
+                previousValue = 12,
+                newValue = 11,
+                timestamp = timestamp,
+                sessionUndoJson = sessionUndoJson,
+            )
+        repository = buildRepository(repositoryProjectCounterDao())
+        val started = repository.startSession(7L) as StartSessionResult.Started
+        timeSource.advance(seconds = 15L)
+
+        assertTrue(repository.applyMainCounterChange(7L, MainCounterChange.Undo))
+        assertEquals(StopSessionResult.Saved(1L), stopReviewedSession(started.session.sessionToken))
+
+        assertEquals(12, project.count)
+        assertEquals(12, completed.single().endRow)
+        assertEquals(0, completed.single().rowsWorked)
+    }
+
+    @Test
     fun `counter changes during recovery remain pending until the interval is reviewed`() =
         runTest {
             var project = CounterProjectEntity(id = 7L, name = "Cardigan", count = 12, stepSize = 1)
@@ -733,6 +799,51 @@ class CounterRepositorySessionRowChangeTest : CounterRepositoryActiveSessionFixt
 
             assertEquals(0, active?.trustedRowsWorked)
             assertEquals(1, active?.pendingRowsWorked)
+        }
+
+    @Test
+    fun `decrements before or during review reduce the accepted row total`() =
+        runTest {
+            var project = CounterProjectEntity(id = 7L, name = "Cardigan", count = 12, stepSize = 1)
+            coEvery { projectDao.getProject(7L) } answers { project }
+            coEvery {
+                projectDao.updateCounterStateWithHistory(
+                    projectId = 7L,
+                    count = any(),
+                    stepSize = any(),
+                    action = any(),
+                    previousValue = any(),
+                    updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
+                )
+            } answers {
+                project = project.copy(count = secondArg())
+            }
+            repository = buildRepository(repositoryProjectCounterDao())
+            for (duringReview in listOf(false, true)) {
+                active = null
+                project = project.copy(count = 12)
+                val started = repository.startSession(7L) as StartSessionResult.Started
+                active = requireNotNull(active).copy(trustedRowsWorked = 5, reviewedRowsWorked = 5)
+                if (duringReview) {
+                    timeSource.reboot()
+                    repository.refreshActiveSession()
+                }
+
+                assertTrue(repository.applyMainCounterChange(7L, MainCounterChange.Decrement))
+                if (!duringReview) timeSource.advance(seconds = ACTIVE_SESSION_REVIEW_THRESHOLD_SECONDS)
+                val recovery = requireNotNull(repository.refreshActiveSession())
+                assertEquals(5, recovery.trustedRowsWorked)
+                assertEquals(-1, recovery.pendingRowsWorked)
+
+                val continued =
+                    repository.addRecoveryInterval(
+                        started.session.sessionToken,
+                        requireNotNull(recovery.recoveryIntervalToken),
+                        0L,
+                    ) as RecoveryResolutionResult.Continued
+                assertEquals(4, continued.session.trustedRowsWorked)
+            }
         }
 
     // CPD-ON
@@ -843,12 +954,13 @@ abstract class CounterRepositoryActiveSessionFixture {
         private var wallMillis = 1_000L
         private var elapsedMillis = 5_000L
         private var bootCount = 4L
+        var hasBootIdentity = true
 
         override fun snapshot() =
             SessionTimeSnapshot(
                 wallClockMillis = wallMillis,
                 elapsedRealtimeMillis = elapsedMillis,
-                bootCount = bootCount,
+                bootCount = bootCount.takeIf { hasBootIdentity },
                 zoneId = "Europe/Helsinki",
             )
 

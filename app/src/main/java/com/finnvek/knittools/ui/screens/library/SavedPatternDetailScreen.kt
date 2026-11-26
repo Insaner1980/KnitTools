@@ -92,7 +92,7 @@ fun SavedPatternDetailScreen(
     var showProjectPicker by rememberSaveable(pattern.id) { mutableStateOf(false) }
     val attachmentViewModel: SavedPatternAttachmentViewModel = viewModel(key = "web-attachment-${pattern.id}")
     val attachmentState by attachmentViewModel.state.collectAsStateWithLifecycle()
-    var lastHandledDeleteErrorId by rememberSaveable(pattern.id) { mutableLongStateOf(deleteErrorId) }
+    var lastHandledDeleteErrorId by remember(pattern.id) { mutableLongStateOf(deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current

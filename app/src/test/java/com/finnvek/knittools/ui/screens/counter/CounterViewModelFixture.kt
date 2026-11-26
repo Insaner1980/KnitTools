@@ -15,6 +15,7 @@ import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
@@ -122,6 +123,7 @@ abstract class CounterViewModelFixture {
         startupPreferences: Flow<com.finnvek.knittools.data.datastore.AppPreferences> = emptyFlow(),
         startupControlsReady: kotlinx.coroutines.flow.StateFlow<Boolean> = MutableStateFlow(true),
         startupProAccessReady: kotlinx.coroutines.flow.StateFlow<Boolean> = MutableStateFlow(true),
+        savedYarnCardRows: Flow<List<YarnCard>> = emptyFlow(),
     ): CounterViewModel {
         val preferences = mockk<PreferencesManager>()
         every { preferences.preferences } returns startupPreferences
@@ -133,7 +135,7 @@ abstract class CounterViewModelFixture {
             every { proManager.hasFeature(any()) } returns false
         }
         val yarnRepository = yarnRepositoryOverride ?: mockk<YarnCardRepository>()
-        every { yarnRepository.getAllCards() } returns emptyFlow()
+        every { yarnRepository.getAllCards() } returns savedYarnCardRows
         val savedPatterns = savedPatternsOverride ?: mockk<SavedPatternRepository>()
         every { savedPatterns.getAll() } returns savedPatternRows
         val reminders = reminderRepositoryOverride ?: mockk<ReminderRepository>()

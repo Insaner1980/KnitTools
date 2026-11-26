@@ -1,14 +1,16 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.domain.calculator.PatternPageCoordinateTransform
 import com.finnvek.knittools.domain.model.FreehandPayload
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
@@ -33,10 +35,13 @@ class PatternAnnotationPointerCancellationTest {
             compose.runOnIdle { fixture.vm.setActiveTool(PatternAnnotationTool.PEN) }
             compose.setContent {
                 val key = documentKey.value
+                val pageSize = 200.dp
+                val pagePixels = with(LocalDensity.current) { pageSize.toPx() }
+                val transform = PatternPageCoordinateTransform(0f, 0f, pagePixels, pagePixels, scale = 1f)
                 rememberSaveableStateHolder().SaveableStateProvider("$key:0") {
                     PatternAnnotationInputOverlay(
                         activeTool = PatternAnnotationTool.PEN,
-                        coordinateTransform = PatternPageCoordinateTransform(0f, 0f, 1_000f, 1_000f, scale = 1f),
+                        coordinateTransform = transform,
                         viewportScale = 1f,
                         pressureEnabled = false,
                         actions =
@@ -51,7 +56,7 @@ class PatternAnnotationPointerCancellationTest {
                                 onEraseStroke = { fixture.vm.eraseStrokeAt(it) },
                                 onSelectAnnotation = { fixture.vm.selectAnnotationAt(it) },
                             ),
-                        modifier = Modifier.fillMaxSize().testTag("annotation-input"),
+                        modifier = Modifier.size(pageSize).testTag("annotation-input"),
                     )
                 }
             }

@@ -302,8 +302,10 @@ fun KnitToolsNavHost(
         actions.onWidgetProPromptLaunchHandled()
     }
 
+    var editorOpeningShareRequestId by rememberSaveable { mutableStateOf<Long?>(null) }
     LaunchedEffect(currentPatternShareImport?.requestId, currentRoute) {
         val request = currentPatternShareImport ?: return@LaunchedEffect
+        if (currentRoute == null || currentRoute == Screen.WebPatternEditor.ROUTE) return@LaunchedEffect
         when (val payload = request.payload) {
             is PatternSharePayload.Ravelry -> {
                 navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(payload.url, request.requestId))
@@ -313,11 +315,8 @@ fun KnitToolsNavHost(
             is PatternSharePayload.WebLink,
             is PatternSharePayload.Error,
             -> {
-                if (currentRoute != Screen.WebPatternEditor.ROUTE) {
-                    navController.navigateSingleTopTo(
-                        Screen.WebPatternEditor.createRoute(WebPatternEditorOrigin.Share),
-                    )
-                }
+                editorOpeningShareRequestId = request.requestId
+                navController.navigateSingleTopTo(Screen.WebPatternEditor.createRoute(WebPatternEditorOrigin.Share))
             }
         }
     }
@@ -430,66 +429,19 @@ fun KnitToolsNavHost(
                         onJourneyAction = onJourneyAction,
                     )
                 }
-                // Dialogikohde: editori on lisäyssheet, ja edellinen näkymä jää näkyviin sen taakse.
-                dialog(
-                    route = Screen.WebPatternEditor.ROUTE,
-                    dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
-                    arguments =
-                        listOf(
-                            navArgument(Screen.WebPatternEditor.ARG_ORIGIN) {
-                                type = NavType.StringType
-                                defaultValue = WebPatternEditorOrigin.Manual.persistedValue
-                            },
-                            navArgument(Screen.WebPatternEditor.ARG_PROJECT_ID) {
-                                type = NavType.LongType
-                                defaultValue = -1L
-                            },
-                            navArgument(Screen.WebPatternEditor.ARG_PATTERN_ID) {
-                                type = NavType.LongType
-                                defaultValue = -1L
-                            },
-                        ),
-                ) { entry ->
-                    FormSheetDialogHost()
-                    WebPatternEditorScreen(
-                        request = currentPatternShareImport,
-                        onRequestStored = actions.onPatternShareImportHandled,
-                        onBack = { navController.popBackStack() },
-                        onOpenDetail = { savedPatternId ->
-                            navController.navigateToTopLevel(TopLevelDestination.Library)
-                            navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
-                        },
-                        onOpenProject = navController::openProjectOverview,
-                        onOpenRavelry = { url ->
-                            navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(url))
-                        },
-                        onStartupReady = { destinationReady(entry, it) },
-                    )
-                }
+                webPatternEditorDestination(
+                    navController = navController,
+                    currentShareRequest = { currentPatternShareImport },
+                    currentEntryId = { navBackStackEntry?.id },
+                    openingShareRequestId = { editorOpeningShareRequestId },
+                    onRequestHandled = actions.onPatternShareImportHandled,
+                    destinationReady = destinationReady,
+                )
             }
         }
     }
 
-    incomingPdfHost { outcome ->
-        when (outcome) {
-            is IncomingPdfOutcome.OpenProject -> {
-                navController.openProjectOverview(outcome.projectId)
-            }
-
-            is IncomingPdfOutcome.OpenSavedPattern -> {
-                navController.navigateToTopLevel(TopLevelDestination.Library)
-                navController.navigateSingleTopTo(Screen.SavedPatternDetail(outcome.savedPatternId).route)
-            }
-
-            IncomingPdfOutcome.OpenFailed,
-            IncomingPdfOutcome.SaveFailed,
-            IncomingPdfOutcome.Downloading,
-            IncomingPdfOutcome.NotPdf,
-            -> {
-                Unit
-            }
-        }
-    }
+    incomingPdfHost { outcome -> navController.openIncomingPdfOutcome(outcome) }
 
     if (showTrialJourney) {
         TrialJourneySheet(
@@ -511,6 +463,61 @@ fun KnitToolsNavHost(
                 showWidgetProPrompt = false
                 navController.navigateSingleTopTo(Screen.ProUpgrade.route)
             },
+        )
+    }
+}
+
+private fun NavGraphBuilder.webPatternEditorDestination(
+    navController: NavHostController,
+    currentShareRequest: () -> PatternShareImportRequest?,
+    currentEntryId: () -> String?,
+    openingShareRequestId: () -> Long?,
+    onRequestHandled: (Long) -> Unit,
+    destinationReady: (NavBackStackEntry, Boolean) -> Unit,
+) {
+    // Dialogikohde: editori on lisäyssheet, ja edellinen näkymä jää näkyviin sen taakse.
+    dialog(
+        route = Screen.WebPatternEditor.ROUTE,
+        dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+        arguments =
+            listOf(
+                navArgument(Screen.WebPatternEditor.ARG_ORIGIN) {
+                    type = NavType.StringType
+                    defaultValue = WebPatternEditorOrigin.Manual.persistedValue
+                },
+                navArgument(Screen.WebPatternEditor.ARG_PROJECT_ID) {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+                navArgument(Screen.WebPatternEditor.ARG_PATTERN_ID) {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+            ),
+    ) { entry ->
+        FormSheetDialogHost()
+        WebPatternEditorScreen(
+            request =
+                currentShareRequest()?.takeIf {
+                    currentEntryId() == entry.id && it.payload !is PatternSharePayload.Ravelry
+                },
+            onRequestStored = onRequestHandled,
+            onBack = {
+                val requestId = currentShareRequest()?.requestId
+                if (requestId != null && requestId == openingShareRequestId()) {
+                    onRequestHandled(requestId)
+                }
+                navController.popBackStack()
+            },
+            onOpenDetail = { savedPatternId ->
+                navController.navigateToTopLevel(TopLevelDestination.Library)
+                navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
+            },
+            onOpenProject = navController::openProjectOverview,
+            onOpenRavelry = { url ->
+                navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(url))
+            },
+            onStartupReady = { destinationReady(entry, it) },
         )
     }
 }
@@ -1302,12 +1309,6 @@ private fun NavGraphBuilder.settingsGraph(
     }
 }
 
-internal fun NavHostController.navigateSingleTopTo(route: String) {
-    navigate(route) {
-        launchSingleTop = true
-    }
-}
-
 private fun NavHostController.openSavedPatternDetail(savedPatternId: Long) {
     navigateToTopLevel(TopLevelDestination.Library)
     navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
@@ -1474,11 +1475,13 @@ private fun rememberRouteProjectReady(
     val currentEntry by navController.currentBackStackEntryAsState()
     var ready by remember(projectId) { mutableStateOf(false) }
     LaunchedEffect(projectId, state.projectId, currentEntry?.id) {
+        if (state.projectId == projectId) {
+            ready = true
+            return@LaunchedEffect
+        }
         if (currentEntry?.id != backStackEntryId) return@LaunchedEffect
         if (ready && state.projectId == null) {
             navController.returnToProjectList()
-        } else if (state.projectId == projectId) {
-            ready = true
         } else {
             ready = false
             viewModel.selectProjectByIdForLaunch(

@@ -709,13 +709,14 @@ class ProjectFoldersScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("Move B to folder").assertIsDisplayed()
+        composeRule.onNodeWithText("Move to folder").assertIsDisplayed()
+        composeRule.onNodeWithText("B").assertIsDisplayed()
         assertEquals(0, movedCallbacks)
         composeRule.onNodeWithContentDescription("Destination. Project organization folder.").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
             assignmentFor(secondProjectId) == destination.id && movedCallbacks == 1
         }
-        composeRule.onNodeWithText("Move B to folder").assertDoesNotExist()
+        composeRule.onNodeWithText("Move to folder").assertDoesNotExist()
         assertEquals(1, movedCallbacks)
     }
 

@@ -609,7 +609,7 @@ class AuditPart08RuntimeMatrixTest {
         edit("Audit renamed photograph")
         capture("rename-photo-ime")
         hideKeyboard()
-        tap("confirm")
+        tap("save")
         seeText("Audit renamed photograph")
         assertTrue(
             runBlocking { db.progressPhotoDao().getAllPhotosOnce().any { it.note == "Audit renamed photograph" } },
@@ -946,7 +946,7 @@ class AuditPart08RuntimeMatrixTest {
         edit("Audit folder")
         hideKeyboard()
         failSql("INSERT", "project_folders") {
-            tap("folder_create")
+            tap("save")
             // SQLite RAISE(ABORT) is a constraint failure, which the repository maps to a name conflict.
             see("folder_name_duplicate")
             capture("folder-write-error")
@@ -1185,7 +1185,7 @@ class AuditPart08RuntimeMatrixTest {
         tapText("Audit brand $yarnName")
         capture("yarn-detail")
         runBlocking(Dispatchers.IO) { db.yarnCardDao().delete(cardId) }
-        see("empty_my_yarn")
+        see("empty_my_yarn_title")
         capture("yarn-empty")
     }
 
@@ -1672,7 +1672,7 @@ class AuditPart08RuntimeMatrixTest {
         launch()
         tap("tab_tools")
         tap("tool_yarn_estimator")
-        for ((mode, length) in listOf("metric" to 200.0, "imperial" to 200.0 / 0.9144)) {
+        for ((mode, length) in listOf("metric" to 200.0, "imperial" to 219.0)) {
             runBlocking(Dispatchers.IO) { app.preferencesManager.get().setUseImperial(mode == "imperial") }
             tap("choose_from_my_yarn")
             seeText("Blue merino")
@@ -1773,8 +1773,14 @@ class AuditPart08RuntimeMatrixTest {
             repository.archiveProject(third, timestamp(today.withDayOfMonth(3)))
         }
         seeText(app.resources.getQuantityString(R.plurals.insights_completion_count, 3, 3))
-        await { nodes().count { it.isVisibleToUser && it.text?.toString()?.contains(one) == true } >= 2 }
-        assertFalse(nodes().any { it.isVisibleToUser && it.text?.toString()?.contains(zero) == true })
+        val locale = app.resources.configuration.locales[0]
+        val formatter = DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "Md"), locale)
+        val dates = (1..3).map { today.withDayOfMonth(it).format(formatter) }
+        await {
+            val visibleText = nodes().filter { it.isVisibleToUser }.mapNotNull { it.text?.toString() }
+            visibleText.count { it == "1" } >= 2 && dates.count { it in visibleText } >= 2
+        }
+        assertFalse(nodes().any { it.isVisibleToUser && (matches(it, "0") || matches(it, zero)) })
         captureRound2("E1-project-completions-three")
     }
 

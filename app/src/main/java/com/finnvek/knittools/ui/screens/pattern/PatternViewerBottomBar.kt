@@ -172,30 +172,35 @@ private fun BottomBarPageControls(
     actions: PatternViewerBottomBarActions,
 ) {
     val page = state.currentPage + 1
-    val total = state.totalPages.coerceAtLeast(1)
-    val pageDescription = stringResource(R.string.pattern_page_indicator, page, total)
+    val total = state.totalPages
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(
             onClick = actions.onPreviousPage,
             modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
-            enabled = state.currentPage > 0,
+            enabled = total > 0 && state.currentPage > 0,
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = stringResource(R.string.pattern_previous_page),
             )
         }
-        Text(
-            text = stringResource(R.string.pattern_page_indicator_compact, page, total),
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false).clearAndSetSemantics { contentDescription = pageDescription },
-        )
+        if (total > 0) {
+            val pageDescription = stringResource(R.string.pattern_page_indicator, page, total)
+            Text(
+                text = stringResource(R.string.pattern_page_indicator_compact, page, total),
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier =
+                    Modifier
+                        .weight(1f, fill = false)
+                        .clearAndSetSemantics { contentDescription = pageDescription },
+            )
+        }
         IconButton(
             onClick = actions.onNextPage,
             modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
-            enabled = state.currentPage < state.totalPages - 1,
+            enabled = total > 0 && state.currentPage < total - 1,
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,

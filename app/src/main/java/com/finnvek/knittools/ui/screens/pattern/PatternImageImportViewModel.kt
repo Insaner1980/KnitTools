@@ -392,7 +392,20 @@ internal class PatternImageImportViewModel
             sessionId ?: return
             _uiState.update { it.copy(pickerRequestId = null, pickerLaunched = false, cameraCapturePending = false) }
             persistState()
-            launchOperation { operationId -> finishCancelled(projectId, sessionId, operationId) }
+            launchOperation { operationId ->
+                val pendingPdfUri = savedStateHandle.get<ArrayList<String>>(KEY_PENDING_OUTPUT)?.firstOrNull()
+                if (pendingPdfUri != null) {
+                    try {
+                        repository.deleteUnreferencedPatternPdf(pendingPdfUri)
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        showRecoverableError(PatternImageImportError.ATTACHMENT, operationId)
+                        return@launchOperation
+                    }
+                }
+                finishCancelled(projectId, sessionId, operationId)
+            }
         }
 
         private fun startCreation() {
@@ -555,7 +568,7 @@ internal class PatternImageImportViewModel
         ) = withContext(NonCancellable) {
             withContext(ioDispatcher) { storage.deleteImportSession(context, projectId, sessionId) }
             if (activeOperationId == operationId && isCurrentSession(sessionId)) {
-                clearSavedState()
+                savedStateHandle.clearPatternImageImport()
                 _uiState.value =
                     PatternImageImportUiState(
                         projectId = projectId,
@@ -660,64 +673,68 @@ internal class PatternImageImportViewModel
         }
 
         private fun persistState() {
-            val state = _uiState.value
-            savedStateHandle[KEY_PROJECT_ID] = state.projectId
-            savedStateHandle[KEY_SESSION_ID] = state.sessionId
-            if (!restoringDraft) savedStateHandle[KEY_PAGES] = encodeStagedPatternPages(state.selection.pages)
-            savedStateHandle[KEY_ORIGIN] = state.origin.name
-            savedStateHandle[KEY_PICKER_REQUEST_ID] = state.pickerRequestId
-            savedStateHandle[KEY_PICKER_LAUNCHED] = state.pickerLaunched
-            savedStateHandle[KEY_CAMERA_PENDING] = state.cameraCapturePending
-        }
-
-        private fun clearSavedState() {
-            savedStateHandle.remove<Long>(KEY_PROJECT_ID)
-            savedStateHandle.remove<String>(KEY_SESSION_ID)
-            savedStateHandle.remove<String>(KEY_PAGES)
-            savedStateHandle.remove<String>(KEY_ORIGIN)
-            savedStateHandle.remove<String>(KEY_PICKER_REQUEST_ID)
-            savedStateHandle.remove<Boolean>(KEY_PICKER_LAUNCHED)
-            savedStateHandle.remove<Boolean>(KEY_CAMERA_PENDING)
-            savedStateHandle.remove<ArrayList<String>>(KEY_PENDING_OUTPUT)
-        }
-
-        private companion object {
-            const val KEY_PROJECT_ID = "pattern_image_project_id"
-            const val KEY_SESSION_ID = "pattern_image_session_id"
-            const val KEY_PAGES = "pattern_image_pages"
-            const val KEY_ORIGIN = "pattern_image_origin"
-            const val KEY_PICKER_REQUEST_ID = "pattern_image_picker_request_id"
-            const val KEY_PICKER_LAUNCHED = "pattern_image_picker_launched"
-            const val KEY_CAMERA_PENDING = "pattern_image_camera_pending"
-            const val KEY_PENDING_OUTPUT = "pattern_image_pending_output"
-
-            fun restoredState(handle: SavedStateHandle): PatternImageImportUiState {
-                val projectId = handle.get<Long>(KEY_PROJECT_ID)
-                val sessionId = handle.get<String>(KEY_SESSION_ID)
-                val pages = decodeStagedPatternPages(handle.get<String>(KEY_PAGES).orEmpty())
-                val attachmentPending = handle.get<ArrayList<String>>(KEY_PENDING_OUTPUT)?.size == 2
-                val origin =
-                    runCatching {
-                        PatternImageImportOrigin.valueOf(handle.get<String>(KEY_ORIGIN).orEmpty())
-                    }.getOrDefault(PatternImageImportOrigin.GALLERY)
-                return PatternImageImportUiState(
-                    projectId = projectId,
-                    sessionId = sessionId,
-                    origin = origin,
-                    pickerRequestId = handle.get<String>(KEY_PICKER_REQUEST_ID),
-                    pickerLaunched =
-                        handle.get<Boolean>(KEY_PICKER_LAUNCHED) ?: (handle.get<String>(KEY_PICKER_REQUEST_ID) != null),
-                    cameraCapturePending =
-                        handle.get<Boolean>(KEY_CAMERA_PENDING)
-                            ?: (origin == PatternImageImportOrigin.CAMERA && pages.isEmpty()),
-                    selection = PatternImageSelection(pages),
-                    phase = if (attachmentPending) PatternImageImportPhase.ERROR else selectionPhase(pages),
-                    error = PatternImageImportError.ATTACHMENT.takeIf { attachmentPending },
-                    attachmentPending = attachmentPending,
-                )
-            }
+            savedStateHandle.savePatternImageImport(_uiState.value, savePages = !restoringDraft)
         }
     }
+
+private const val KEY_PROJECT_ID = "pattern_image_project_id"
+private const val KEY_SESSION_ID = "pattern_image_session_id"
+private const val KEY_PAGES = "pattern_image_pages"
+private const val KEY_ORIGIN = "pattern_image_origin"
+private const val KEY_PICKER_REQUEST_ID = "pattern_image_picker_request_id"
+private const val KEY_PICKER_LAUNCHED = "pattern_image_picker_launched"
+private const val KEY_CAMERA_PENDING = "pattern_image_camera_pending"
+private const val KEY_PENDING_OUTPUT = "pattern_image_pending_output"
+
+private fun SavedStateHandle.savePatternImageImport(
+    state: PatternImageImportUiState,
+    savePages: Boolean,
+) {
+    this[KEY_PROJECT_ID] = state.projectId
+    this[KEY_SESSION_ID] = state.sessionId
+    if (savePages) this[KEY_PAGES] = encodeStagedPatternPages(state.selection.pages)
+    this[KEY_ORIGIN] = state.origin.name
+    this[KEY_PICKER_REQUEST_ID] = state.pickerRequestId
+    this[KEY_PICKER_LAUNCHED] = state.pickerLaunched
+    this[KEY_CAMERA_PENDING] = state.cameraCapturePending
+}
+
+private fun SavedStateHandle.clearPatternImageImport() {
+    remove<Long>(KEY_PROJECT_ID)
+    remove<String>(KEY_SESSION_ID)
+    remove<String>(KEY_PAGES)
+    remove<String>(KEY_ORIGIN)
+    remove<String>(KEY_PICKER_REQUEST_ID)
+    remove<Boolean>(KEY_PICKER_LAUNCHED)
+    remove<Boolean>(KEY_CAMERA_PENDING)
+    remove<ArrayList<String>>(KEY_PENDING_OUTPUT)
+}
+
+private fun restoredState(handle: SavedStateHandle): PatternImageImportUiState {
+    val projectId = handle.get<Long>(KEY_PROJECT_ID)
+    val sessionId = handle.get<String>(KEY_SESSION_ID)
+    val pages = decodeStagedPatternPages(handle.get<String>(KEY_PAGES).orEmpty())
+    val attachmentPending = handle.get<ArrayList<String>>(KEY_PENDING_OUTPUT)?.size == 2
+    val origin =
+        runCatching {
+            PatternImageImportOrigin.valueOf(handle.get<String>(KEY_ORIGIN).orEmpty())
+        }.getOrDefault(PatternImageImportOrigin.GALLERY)
+    return PatternImageImportUiState(
+        projectId = projectId,
+        sessionId = sessionId,
+        origin = origin,
+        pickerRequestId = handle.get<String>(KEY_PICKER_REQUEST_ID),
+        pickerLaunched =
+            handle.get<Boolean>(KEY_PICKER_LAUNCHED) ?: (handle.get<String>(KEY_PICKER_REQUEST_ID) != null),
+        cameraCapturePending =
+            handle.get<Boolean>(KEY_CAMERA_PENDING)
+                ?: (origin == PatternImageImportOrigin.CAMERA && pages.isEmpty()),
+        selection = PatternImageSelection(pages),
+        phase = if (attachmentPending) PatternImageImportPhase.ERROR else selectionPhase(pages),
+        error = PatternImageImportError.ATTACHMENT.takeIf { attachmentPending },
+        attachmentPending = attachmentPending,
+    )
+}
 
 private fun cameraPage(
     imageUri: Uri,

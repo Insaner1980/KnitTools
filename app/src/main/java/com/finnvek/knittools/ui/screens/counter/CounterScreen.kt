@@ -494,12 +494,16 @@ fun ProjectContentHost(
                     expectedExistingSavedPatternId = expectedExistingPatternId,
                     projectId = replacementProjectId,
                 ) { result ->
-                    clearPendingWebPatternReplacement()
-                    if (
-                        result != SavedPatternMetadataMutationResult.Attached(replacementPatternId) &&
-                        result != SavedPatternMetadataMutationResult.AlreadyAttached(replacementPatternId)
+                    if (pendingWebPatternId == replacementPatternId &&
+                        pendingExistingWebPatternId == expectedExistingPatternId &&
+                        pendingWebPatternProjectId == replacementProjectId
                     ) {
-                        showWebPatternSaveFailed()
+                        clearPendingWebPatternReplacement()
+                        if (result != SavedPatternMetadataMutationResult.Attached(replacementPatternId) &&
+                            result != SavedPatternMetadataMutationResult.AlreadyAttached(replacementPatternId)
+                        ) {
+                            showWebPatternSaveFailed()
+                        }
                     }
                 }
             },
@@ -797,7 +801,10 @@ fun ProjectContentHost(
                     }
                 }
             },
-            onDismiss = { showDocumentsSheet = false },
+            onDismiss = {
+                showDocumentsSheet = false
+                projectDocumentError = null
+            },
             onSelect = { documentId ->
                 viewModel.selectProjectDocument(documentId) { result ->
                     projectDocumentError = result.toProjectDocumentError()
@@ -1175,7 +1182,6 @@ fun ProjectContentHost(
             showPatternPicker,
             pendingWebPatternId != null,
             showDocumentsSheet,
-            projectDocumentError != null,
             patternImportInProgress,
             showStepSizeSheet,
             targetProjectId != null,

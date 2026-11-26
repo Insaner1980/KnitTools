@@ -97,6 +97,7 @@ class ProjectYarnUsageViewModel
                     length = input(amounts?.metersPerSkein),
                     weight = input(amounts?.gramsPerSkein),
                 ).displayIn(unit)
+            if (projectId != project || editor.value.busy) return
             mutableEditor.value = YarnUsageEditorState(draft = draft)
             persistDraft()
         }

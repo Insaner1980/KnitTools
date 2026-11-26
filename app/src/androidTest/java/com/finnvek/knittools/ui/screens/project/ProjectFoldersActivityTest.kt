@@ -438,7 +438,8 @@ class ProjectFoldersActivityTest {
     private fun moveOverviewProjectTo(destination: String) {
         clickContentDescription(PROJECT_ACTIONS_DESCRIPTION)
         clickText(MOVE_TO_FOLDER_LABEL)
-        waitForText("Move $folderProjectName to folder")
+        waitForText(MOVE_TO_FOLDER_LABEL)
+        waitForText(folderProjectName)
         scrollUntilTextVisible(destination)
         clickText(destination)
         waitForContentDescription(PROJECT_ACTIONS_DESCRIPTION)

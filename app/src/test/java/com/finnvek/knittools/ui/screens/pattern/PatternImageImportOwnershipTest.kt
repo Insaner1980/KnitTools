@@ -5,6 +5,10 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.local.CounterProjectDao
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
+import com.finnvek.knittools.data.local.SavedPatternDao
+import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.PatternImageInfo
 import com.finnvek.knittools.data.storage.PatternImageStageBatch
@@ -13,10 +17,13 @@ import com.finnvek.knittools.data.storage.PatternImageStageFailure
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
+import com.finnvek.knittools.repository.SavedPatternRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -42,12 +49,17 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternImageImportOwnershipTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     private val dispatcher = StandardTestDispatcher()
     private val applicationScope = CoroutineScope(dispatcher)
     private val proManager = mockk<ProManager>(relaxed = true)
@@ -434,6 +446,70 @@ class PatternImageImportOwnershipTest {
         }
 
     @Test
+    fun `cancelled pending attachment removes only the unreferenced generated PDF`() =
+        runTest {
+            every { context.filesDir } returns temporaryFolder.root
+            val directory = temporaryFolder.newFolder("pattern_pdfs", "7")
+            val unused = File(directory, "unused.pdf").apply { writeText("Uncommitted copy") }
+            val retained = File(directory, "retained.pdf").apply { writeText("Library copy") }
+            val projects = mockk<CounterProjectDao>()
+            coEvery { projects.countProjectsUsingPatternUri(any()) } returns 0
+            val patterns = mockk<SavedPatternDao>()
+            coEvery { patterns.getByLocalPdfUri(unused.toURI().toString()) } returns null
+            coEvery { patterns.getByLocalPdfUri(retained.toURI().toString()) } returns
+                SavedPatternEntity(source = "LOCAL_FILE", name = "Library PDF", designerName = null)
+            coEvery { patterns.getReferencedPdfUris() } returns emptyList()
+            val savedPatterns =
+                SavedPatternRepository(patterns, context, projects, ImmediateDatabaseTransactionRunner, dispatcher)
+            val projectRepository =
+                CounterRepository(
+                    dao = projects,
+                    projectCounterDao = mockk(),
+                    sessionDao = mockk(),
+                    photoStorage = mockk(),
+                    patternDocumentStorage = storage,
+                    context = context,
+                    yarnCardRepository = mockk(),
+                    savedPatternRepository = savedPatterns,
+                    projectDocumentRepository = mockk(),
+                    projectFolderDao = mockk(),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                    ioDispatcher = dispatcher,
+                )
+
+            mockkStatic(Uri::class)
+            try {
+                for (pdf in listOf(retained, unused)) {
+                    val fileUri = pdf.toURI().toString()
+                    every { Uri.parse(fileUri) } returns
+                        mockk {
+                            every { scheme } returns "file"
+                            every { path } returns pdf.absolutePath
+                        }
+                    val handle =
+                        SavedStateHandle(
+                            mapOf(
+                                "pattern_image_project_id" to 7L,
+                                "pattern_image_session_id" to pdf.nameWithoutExtension,
+                                "pattern_image_pending_output" to arrayListOf(fileUri, pdf.name),
+                            ),
+                        )
+                    val model = newModel(handle, projectRepository = projectRepository)
+                    models.put(pdf.name, model)
+                    assertTrue(model.uiState.value.attachmentPending)
+                    model.cancelImport()
+                    advanceUntilIdle()
+                    assertEquals(PatternImageImportPhase.CANCELLED, model.uiState.value.phase)
+                }
+
+                assertEquals("Library copy", retained.readText())
+                assertFalse("The cancelled import left an unreferenced PDF", unused.exists())
+            } finally {
+                unmockkStatic(Uri::class)
+            }
+        }
+
+    @Test
     fun `late attachment success clears only its initiating session and leaves B open`() =
         runTest {
             val attachment = CompletableDeferred<ProjectDocumentMutationResult>()
@@ -557,9 +633,10 @@ class PatternImageImportOwnershipTest {
     private fun newModel(
         handle: SavedStateHandle,
         ioDispatcher: CoroutineDispatcher = dispatcher,
+        projectRepository: CounterRepository = repository,
     ) = PatternImageImportViewModel(
         storage,
-        repository,
+        projectRepository,
         context,
         ioDispatcher,
         handle,

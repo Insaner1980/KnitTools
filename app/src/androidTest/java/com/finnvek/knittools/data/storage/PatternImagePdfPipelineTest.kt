@@ -189,6 +189,31 @@ class PatternImagePdfPipelineTest {
     }
 
     @Test
+    fun conversionWritesPageDataBeforeStartingTheNextPage() {
+        val image = File(fixtureDir, "noise.png")
+        val size = 128
+        val random = java.util.Random(42)
+        val pixels = IntArray(size * size) { random.nextInt() or Color.BLACK }
+        val bitmap = Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888)
+        try {
+            image.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        } finally {
+            bitmap.recycle()
+        }
+        val directory = File(context.filesDir, "pattern_pdfs/$projectId")
+        val pages = List(3) { page(image, "page-$it") }
+        val sizes = mutableListOf<Long>()
+        runBlocking {
+            storage.convertImagesToPdf(context, projectId, pages, "streamed.pdf") { _, _ ->
+                val pendingPdf = directory.listFiles().orEmpty().single { it.extension == "tmp" }
+                sizes += pendingPdf.length()
+            }
+        }
+        assertTrue(sizes.first() > 0)
+        assertTrue(sizes.zipWithNext().all { (previous, next) -> next > previous })
+    }
+
+    @Test
     fun cancellationBeforePublishLeavesNoPartialPdf() {
         val first = imageFile("first.png", 30, 20, Color.RED)
         val second = imageFile("second.png", 20, 30, Color.BLUE)
@@ -207,7 +232,7 @@ class PatternImagePdfPipelineTest {
         }
 
         val outputDirectory = File(context.filesDir, "pattern_pdfs/$projectId")
-        assertFalse(outputDirectory.listFiles()?.any { it.extension == "pdf" } == true)
+        assertTrue(outputDirectory.listFiles().isNullOrEmpty())
     }
 
     @Test

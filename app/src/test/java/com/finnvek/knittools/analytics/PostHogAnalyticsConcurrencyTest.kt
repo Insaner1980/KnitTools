@@ -95,6 +95,31 @@ class PostHogAnalyticsConcurrencyTest {
     }
 
     @Test
+    fun `stored consent collector can revoke consent while the first client is starting`() {
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val closed = CountDownLatch(1)
+        val sdk = mockk<PostHogInterface>(relaxed = true)
+        every { sdk.close() } answers { closed.countDown() }
+        val gate = AnalyticsDeliveryGate()
+        val analytics =
+            analyticsWithBlockedInitialization(entered, release) { PostHogConsentClient(sdk, gate) {} }
+
+        try {
+            analytics.applyStoredConsent(true, "first")
+            assertTrue(entered.await(5, TimeUnit.SECONDS))
+            analytics.applyStoredConsent(false, "second")
+            updateForegroundScreen(analytics)
+            release.countDown()
+            assertTrue(closed.await(5, TimeUnit.SECONDS))
+            assertTrue(gate.isRetired)
+            verify(exactly = 0) { sdk.capture(any(), properties = any()) }
+        } finally {
+            release.countDown()
+        }
+    }
+
+    @Test
     fun `off-on with the same generation cannot publish the old initialization`() {
         checkSupersededInitialization(revokeFirst = true, failFirst = false)
     }

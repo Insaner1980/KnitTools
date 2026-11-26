@@ -106,9 +106,9 @@ internal fun PatternAnnotationInputOverlay(
         modifier =
             modifier.pointerInput(activeTool, coordinateTransform, viewportScale, pressureEnabled) {
                 val simplificationTolerance = 1f / (minOf(size.width, size.height) * viewportScale).coerceAtLeast(1f)
-                try {
-                    awaitEachGesture {
-                        var gestureState = PatternAnnotationPointerGestureState()
+                awaitEachGesture {
+                    var gestureState = PatternAnnotationPointerGestureState()
+                    try {
                         while (!gestureState.finished) {
                             val event = awaitPointerEvent()
                             gestureState =
@@ -122,9 +122,9 @@ internal fun PatternAnnotationInputOverlay(
                                     actions = actions,
                                 )
                         }
+                    } finally {
+                        if (!gestureState.finished && gestureState.activePointerId != null) actions.onCancelStroke()
                     }
-                } finally {
-                    actions.onCancelStroke()
                 }
             },
     ) {}
@@ -146,7 +146,11 @@ private fun processAnnotationPointerEvent(
     actions: PatternAnnotationInputActions,
 ): PatternAnnotationPointerGestureState {
     val pressedChanges = event.changes.filter(PointerInputChange::pressed)
-    val stylusPresent = pressedChanges.any { it.type == PointerType.Stylus || it.type == PointerType.Eraser }
+    val stylusPresent =
+        event.changes.any {
+            (it.pressed || it.id.value == state.activePointerId) &&
+                (it.type == PointerType.Stylus || it.type == PointerType.Eraser)
+        }
     val annotationPointers =
         if (stylusPresent) {
             pressedChanges.filter { it.type != PointerType.Touch }
@@ -253,10 +257,17 @@ private fun updateAnnotationPointerGesture(
             state.gestureTool != PatternAnnotationTool.ERASER &&
             state.gestureTool != PatternAnnotationTool.SELECT
         ) {
+            if (change.position != change.previousPosition) {
+                change.toNormalizedPoint(coordinateTransform, pressureEnabled)?.let(actions.onAppendStrokePoint)
+            }
             actions.onCommitStroke(simplificationTolerance)
         }
         change.consume()
-        return state.copy(finished = true)
+        return PatternAnnotationPointerGestureState(finished = event.changes.none(PointerInputChange::pressed))
+    }
+    if (state.gestureTool == PatternAnnotationTool.ERASER && !coordinateTransform.contains(change.position)) {
+        change.consume()
+        return state
     }
     val point = change.toNormalizedPoint(coordinateTransform, pressureEnabled) ?: return state
     when (state.gestureTool) {

@@ -720,9 +720,58 @@ class NotesEditorDraftRecoveryTest : NotesEditorTestFixture() {
     fun `failed final save restores a reconciled draft that still fits inline`() =
         verifyRestoredCorrection("Base external", expectFile = false)
 
+    @Test
+    fun `failed file and database writes restore the correction against the stored note`() =
+        verifyRestoredCorrection("Base" + " external".repeat(2_000), expectFile = true, fileWriteSucceeds = false)
+
+    @Test
+    fun `a recovery patch applies only to the matching note and recognizes an already saved result`() {
+        val base = "Header red footer"
+        val edited = "Header blue footer"
+        val patch = requireNotNull(encodeNotesDraftPatch(base, edited, 512))
+        assertEquals(NotesDraft(edited, base), restoreNotesDraftPatch(patch, base))
+        assertEquals(NotesDraft(edited, edited), restoreNotesDraftPatch(patch, edited))
+        assertNull(restoreNotesDraftPatch(patch, "Header new footer"))
+        assertNull(restoreNotesDraftPatch("invalid", base))
+        assertNull(encodeNotesDraftPatch(base, "x".repeat(513), 512))
+    }
+
+    @Test
+    fun `a recovery patch with a changed database base requires an explicit retry`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Changed independently", notesCreated = true)
+            every { repository.observeProject(1L) } returns flowOf(project)
+            val patch = requireNotNull(encodeNotesDraftPatch("Base external red", "Base external blue", 512))
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "projectId" to 1L,
+                        "notesDraft" to "Base blue",
+                        "notesDraftBase" to "Base",
+                        "notesDraftPatch" to patch,
+                    ),
+                )
+            val editor = createEditor(handle)
+            advanceUntilIdle()
+            assertEquals("Base blue", editor.uiState.value.notes)
+            assertTrue(editor.uiState.value.saveFailed)
+            val store = androidx.lifecycle.ViewModelStore()
+            store.put("editor", editor)
+            store.clear()
+            advanceUntilIdle()
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any(), any()) }
+
+            val reopened = createEditor(handle)
+            advanceUntilIdle()
+            reopened.saveImmediately()
+            advanceUntilIdle()
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Base blue", false) }
+        }
+
     private fun verifyRestoredCorrection(
         external: String,
         expectFile: Boolean,
+        fileWriteSucceeds: Boolean = true,
     ) = runTest {
         val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
         val stored = "$external red"
@@ -739,8 +788,8 @@ class NotesEditorDraftRecoveryTest : NotesEditorTestFixture() {
         val storage = mockk<NotesDraftStorage>(relaxUnitFun = true)
         val files = mutableMapOf<UUID, NotesDraft>()
         coEvery { storage.write(1L, any(), any()) } answers {
-            files[secondArg<UUID>()] = thirdArg<NotesDraft>()
-            true
+            if (fileWriteSucceeds) files[secondArg<UUID>()] = thirdArg<NotesDraft>()
+            fileWriteSucceeds
         }
         coEvery { storage.read(1L, any()) } answers { files[secondArg<UUID>()] }
         val handle = SavedStateHandle(mapOf("projectId" to 1L))
@@ -759,21 +808,26 @@ class NotesEditorDraftRecoveryTest : NotesEditorTestFixture() {
         coVerify(exactly = 1) { repository.saveProjectNotes(1L, stored, corrected, false) }
         val fileId = handle.get<String>("notesDraftFileId")
         assertEquals(expectFile, fileId != null)
-        if (fileId != null) {
+        if (fileId == null) {
+            assertEquals(corrected, handle.get<String>("notesDraft"))
+            assertEquals(stored, handle.get<String>("notesDraftBase"))
+        } else if (fileWriteSucceeds) {
             assertEquals(NotesDraft(corrected, stored), files[UUID.fromString(fileId)])
             assertNull(handle.get<String>("notesDraft"))
         } else {
-            assertEquals(corrected, handle.get<String>("notesDraft"))
-            assertEquals(stored, handle.get<String>("notesDraftBase"))
+            assertTrue(files.isEmpty())
+            assertTrue(requireNotNull(handle.get<String>("notesDraftPatch")).length < stored.length)
         }
         every { repository.observeProject(1L) } returns flowOf(project.copy(notes = stored))
         coEvery { repository.saveProjectNotes(1L, stored, corrected, false) } returns
             ProjectNotesSaveResult.Saved(project.copy(notes = corrected))
-        val restored = createEditor(SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) }), storage)
+        val restoredHandle = SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) })
+        val restored = createEditor(restoredHandle, storage)
         runCurrent()
         assertEquals(corrected, restored.uiState.value.notes)
         advanceUntilIdle()
         coVerify(exactly = 2) { repository.saveProjectNotes(1L, stored, corrected, false) }
+        assertNull(restoredHandle.get<String>("notesDraftPatch"))
     }
 }
 

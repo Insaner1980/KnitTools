@@ -74,6 +74,7 @@ class NotesEditorViewModel
         private var latestStoredNotes: String = ""
         private var notesObservationVersion = 0L
         private var hasLocalEdits: Boolean = false
+        private var restoredDraftNeedsReview = false
 
         init {
             viewModelScope.launch {
@@ -114,13 +115,13 @@ class NotesEditorViewModel
                     }
                     val restored =
                         if (!_uiState.value.isLoaded || !_uiState.value.canEditNotes) {
-                            restoreDraft(loadedProjectId)
+                            restoreDraft(loadedProjectId, project.notes)
                         } else {
                             null
                         }
                     val restoredDraft = restored?.notes
                     val hasRestoredDraft = restoredDraft != null && restoredDraft != project.notes
-                    if (restoredDraft == project.notes) {
+                    if (restoredDraft == project.notes && !restoredDraftNeedsReview) {
                         clearSavedDraft()
                     }
                     val shouldAdoptNotes =
@@ -134,7 +135,7 @@ class NotesEditorViewModel
                             } else {
                                 project.notes
                             }
-                        hasLocalEdits = hasRestoredDraft
+                        hasLocalEdits = hasRestoredDraft || restoredDraftNeedsReview
                     }
                     _uiState.update { state ->
                         state.copy(
@@ -149,9 +150,10 @@ class NotesEditorViewModel
                             isLoaded = true,
                             canEditNotes = canEditNotes,
                             isMissingProject = false,
+                            saveFailed = state.saveFailed || restoredDraftNeedsReview,
                         )
                     }
-                    if (hasRestoredDraft) {
+                    if (hasRestoredDraft && !restoredDraftNeedsReview) {
                         if (savedStateHandle.contains(NOTES_DRAFT_KEY) &&
                             !fitsSavedState(restoredDraft.orEmpty(), persistedNotes)
                         ) {
@@ -167,6 +169,7 @@ class NotesEditorViewModel
             val loadedProjectId = projectId ?: return
             val state = _uiState.value
             if (state.isMissingProject || !state.isLoaded || !state.canEditNotes) return
+            restoredDraftNeedsReview = false
             _uiState.update { it.copy(notes = text, exitRequested = false) }
             val job = saveJob
             val write = activeWrite
@@ -205,6 +208,7 @@ class NotesEditorViewModel
                 if (exitAfterSave) requestExit()
                 return
             }
+            restoredDraftNeedsReview = false
             val write = activeWrite
             if (write != null && saveJob?.isActive == true) {
                 if (exitAfterSave) write.exitAfterSave = true
@@ -366,6 +370,7 @@ class NotesEditorViewModel
             }
 
         fun discardChanges() {
+            restoredDraftNeedsReview = false
             saveJob?.cancel()
             interruptedWrite = null
             persistedNotes = latestStoredNotes
@@ -390,6 +395,7 @@ class NotesEditorViewModel
         ): UUID? {
             if (fitsSavedState(notes, baseNotes)) {
                 clearDraftFile()
+                savedStateHandle.remove<String>(NOTES_DRAFT_PATCH_KEY)
                 savedStateHandle[NOTES_DRAFT_KEY] = notes
                 savedStateHandle[NOTES_DRAFT_BASE_KEY] = baseNotes
                 return null
@@ -402,17 +408,24 @@ class NotesEditorViewModel
             fileId: UUID,
             notes: String,
             baseNotes: String,
-        ) {
+        ): Boolean =
             draftFileMutex.withLock {
-                if (draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))) {
-                    currentCoroutineContext().ensureActive()
-                    savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
-                    savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
-                }
+                val written = draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))
+                currentCoroutineContext().ensureActive()
+                if (written) clearInlineDraft()
+                written
             }
-        }
 
-        private suspend fun restoreDraft(loadedProjectId: Long): NotesDraft? {
+        private suspend fun restoreDraft(
+            loadedProjectId: Long,
+            storedNotes: String,
+        ): NotesDraft? {
+            restoredDraftNeedsReview = false
+            val patch = savedStateHandle.get<String>(NOTES_DRAFT_PATCH_KEY)
+            if (patch != null) {
+                restoreNotesDraftPatch(patch, storedNotes)?.let { return it }
+                restoredDraftNeedsReview = true
+            }
             val diskDraft = draftFileId()?.let { draftStorage.read(loadedProjectId, it) }
             return diskDraft ?: savedStateHandle.get<String>(NOTES_DRAFT_KEY)?.let {
                 NotesDraft(it, savedStateHandle[NOTES_DRAFT_BASE_KEY])
@@ -434,9 +447,14 @@ class NotesEditorViewModel
             }
         }
 
-        private fun clearSavedDraft() {
+        private fun clearInlineDraft() {
             savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
             savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
+            savedStateHandle.remove<String>(NOTES_DRAFT_PATCH_KEY)
+        }
+
+        private fun clearSavedDraft() {
+            clearInlineDraft()
             clearDraftFile()
         }
 
@@ -451,7 +469,10 @@ class NotesEditorViewModel
             baseNotes: String,
         ) {
             val fileId = storeInlineOrGetDraftFileId(notes, baseNotes) ?: return
-            writeDraftFile(loadedProjectId, fileId, notes, baseNotes)
+            if (!writeDraftFile(loadedProjectId, fileId, notes, baseNotes)) {
+                val patch = encodeNotesDraftPatch(baseNotes, notes, MAX_INLINE_DRAFT_CHARS)
+                savedStateHandle[NOTES_DRAFT_PATCH_KEY] = patch.orEmpty()
+            }
         }
 
         override fun onCleared() {
@@ -463,7 +484,7 @@ class NotesEditorViewModel
                     !state.isMissingProject &&
                     hasLocalEdits
             val draftBeforeClear = state.notes
-            if (!shouldFlush) return
+            if (!shouldFlush || restoredDraftNeedsReview) return
             val baseBeforeClear = persistedNotes
             val interrupted = interruptedWrite
 
@@ -534,10 +555,11 @@ class NotesEditorViewModel
 
         companion object {
             private const val DEBOUNCE_MS = 1000L
-            private const val MAX_INLINE_DRAFT_CHARS = 16_384L
+            private const val MAX_INLINE_DRAFT_CHARS = 16_384
             private const val NOTES_DRAFT_KEY = "notesDraft"
             private const val NOTES_DRAFT_BASE_KEY = "notesDraftBase"
             private const val NOTES_DRAFT_FILE_ID_KEY = "notesDraftFileId"
+            private const val NOTES_DRAFT_PATCH_KEY = "notesDraftPatch"
             private const val NOTES_CREATION_AUTHORIZED_KEY = "notesCreationAuthorized"
         }
     }

@@ -122,6 +122,7 @@ class MentalModelClarityRuntimeTest {
                 onOpenPattern = {},
                 onAttachToProject = { _, _ -> },
                 onRemove = { deleted++ },
+                claimDeleteError = { false },
             )
         }
         val action =
@@ -167,7 +168,7 @@ class MentalModelClarityRuntimeTest {
         render {
             SavedPatternsScreen(
                 SavedPatternsState(patterns, true, setOf(7, 8), 0),
-                SavedPatternsActions({}, {}, {}, {}, {}, { deleted++ }, {}, {}),
+                SavedPatternsActions({}, {}, {}, {}, {}, { deleted++ }, {}, {}, { false }),
             )
         }
         rule.onNodeWithText(text(R.string.delete)).performClick()
@@ -199,6 +200,7 @@ class MentalModelClarityRuntimeTest {
                 { openedPdf = true },
                 { _, _ -> },
                 {},
+                { false },
                 isLocalPdfAvailable = pdfAvailable.value,
             )
         }

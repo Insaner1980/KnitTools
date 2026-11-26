@@ -92,8 +92,8 @@ class LibraryViewModel
 
         private val _selectedPatternIds = MutableStateFlow<Set<Long>>(emptySet())
         val selectedPatternIds: StateFlow<Set<Long>> = _selectedPatternIds.asStateFlow()
-        private val _patternDeleteErrorId = MutableStateFlow(0L)
-        val patternDeleteErrorId: StateFlow<Long> = _patternDeleteErrorId.asStateFlow()
+        internal val patternDeleteError = LibraryErrorState(savedStateHandle, "patternDeleteErrorId")
+        val patternDeleteErrorId = patternDeleteError.id
 
         private val _isYarnSelectMode = MutableStateFlow(false)
         val isYarnSelectMode: StateFlow<Boolean> = _isYarnSelectMode.asStateFlow()
@@ -221,7 +221,7 @@ class LibraryViewModel
                 selectedIds = _selectedPatternIds,
                 exitSelectMode = ::exitPatternSelectMode,
                 deleteByIds = savedPatternRepository::deleteByIds,
-                onError = { _patternDeleteErrorId.value += 1 },
+                onError = patternDeleteError::report,
             )
         }
 
@@ -237,7 +237,7 @@ class LibraryViewModel
                     } catch (cancellation: CancellationException) {
                         throw cancellation
                     } catch (_: Exception) {
-                        _patternDeleteErrorId.value += 1
+                        patternDeleteError.report()
                         return@launch
                     }
 
@@ -248,13 +248,13 @@ class LibraryViewModel
                         } catch (cancellation: CancellationException) {
                             throw cancellation
                         } catch (_: Exception) {
-                            _patternDeleteErrorId.value += 1
+                            patternDeleteError.report()
                             return@launch
                         }
                     when (result) {
                         SavedPatternDeleteResult.Deleted -> onDeleted()
 
-                        SavedPatternDeleteResult.PersistenceFailure -> _patternDeleteErrorId.value += 1
+                        SavedPatternDeleteResult.PersistenceFailure -> patternDeleteError.report()
 
                         SavedPatternDeleteResult.PatternMissing,
                         SavedPatternDeleteResult.NotWebPattern,
@@ -266,7 +266,7 @@ class LibraryViewModel
                     } catch (cancellation: CancellationException) {
                         throw cancellation
                     } catch (_: Exception) {
-                        _patternDeleteErrorId.value += 1
+                        patternDeleteError.report()
                         return@launch
                     }
                     onDeleted()

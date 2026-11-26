@@ -872,6 +872,7 @@ private fun NavGraphBuilder.librarySavedPatternsRoute(navController: NavHostCont
                     onToggleSelection = libraryViewModel::togglePatternSelection,
                     onSelectAll = libraryViewModel::selectAllPatterns,
                     onDeleteSelected = libraryViewModel::deleteSelectedPatterns,
+                    claimDeleteError = libraryViewModel.patternDeleteError::claim,
                     onExitSelectMode = libraryViewModel::exitPatternSelectMode,
                     onBack = { navController.popBackStack() },
                 ),
@@ -978,6 +979,7 @@ private fun SavedPatternDetailContent(
             navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(url))
         },
         deleteErrorId = patternDeleteErrorId,
+        claimDeleteError = libraryViewModel.patternDeleteError::claim,
     )
 }
 

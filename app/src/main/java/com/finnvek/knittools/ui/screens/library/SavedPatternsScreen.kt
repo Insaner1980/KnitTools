@@ -36,7 +36,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -52,6 +51,9 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
@@ -88,6 +90,7 @@ data class SavedPatternsActions(
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
     val onBack: () -> Unit,
+    val claimDeleteError: (Long) -> Boolean,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,7 +101,6 @@ fun SavedPatternsScreen(
 ) {
     val listState = rememberLazyListState()
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
-    var lastHandledDeleteErrorId by remember { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
 
@@ -106,12 +108,7 @@ fun SavedPatternsScreen(
         actions.onExitSelectMode()
     }
 
-    LaunchedEffect(state.deleteErrorId) {
-        if (state.deleteErrorId > lastHandledDeleteErrorId) {
-            lastHandledDeleteErrorId = state.deleteErrorId
-            snackbarHostState.showSnackbar(deleteFailedMessage)
-        }
-    }
+    PatternDeleteErrorEffect(state.deleteErrorId, actions.claimDeleteError, snackbarHostState, deleteFailedMessage)
 
     if (showDeleteConfirmDialog) {
         SavedPatternsDeleteDialog(
@@ -180,6 +177,21 @@ fun SavedPatternsScreen(
                 padding = padding,
                 bottomContentPadding = actionHeight + 32.dp,
             )
+        }
+    }
+}
+
+@Composable
+internal fun PatternDeleteErrorEffect(
+    errorId: Long,
+    claimDeleteError: (Long) -> Boolean,
+    snackbarHostState: SnackbarHostState,
+    message: String,
+) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle, errorId) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            if (claimDeleteError(errorId)) snackbarHostState.showSnackbar(message)
         }
     }
 }

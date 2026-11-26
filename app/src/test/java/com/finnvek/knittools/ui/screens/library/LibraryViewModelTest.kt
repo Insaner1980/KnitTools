@@ -247,10 +247,11 @@ class LibraryViewModelTest {
         }
 
     @Test
-    fun `failed pattern delete clears selection state`() =
+    fun `failed pattern delete clears selection and delivers its error once after recreation`() =
         runTest {
             coEvery { savedPatternRepository.deleteByIds(listOf(1L)) } throws RuntimeException("delete failed")
-            val viewModel = createViewModel()
+            val handle = SavedStateHandle()
+            val viewModel = createViewModel(handle)
 
             viewModel.enterPatternSelectMode(1L)
             viewModel.deleteSelectedPatterns()
@@ -259,6 +260,12 @@ class LibraryViewModelTest {
             assertFalse(viewModel.isPatternSelectMode.value)
             assertTrue(viewModel.selectedPatternIds.value.isEmpty())
             assertEquals(1L, viewModel.patternDeleteErrorId.value)
+            val restoredHandle = SavedStateHandle(handle.keys().associateWith { handle.get<Long>(it) })
+            val restored = createViewModel(restoredHandle)
+            assertTrue(restored.patternDeleteError.claim(restored.patternDeleteErrorId.value))
+            val reopenedHandle = SavedStateHandle(restoredHandle.keys().associateWith { restoredHandle.get<Long>(it) })
+            val reopened = createViewModel(reopenedHandle)
+            assertFalse(reopened.patternDeleteError.claim(reopened.patternDeleteErrorId.value))
         }
 
     @Test

@@ -17,6 +17,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -33,6 +39,42 @@ class SavedPatternsWebScreenTest {
     val composeRule = createComposeRule()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test
+    fun aDeleteErrorWhileTheListIsAbsentIsShownOnceOnReturn() {
+        val shown = mutableStateOf(false)
+        val error = LibraryErrorState(SavedStateHandle(), "patternDeleteErrorId")
+        val message = context.getString(R.string.generic_error_unknown)
+        val owner =
+            object : LifecycleOwner {
+                override val lifecycle = LifecycleRegistry(this)
+            }
+        composeRule.runOnUiThread { owner.lifecycle.currentState = Lifecycle.State.STARTED }
+        composeRule.setContent {
+            KnitToolsTheme {
+                if (shown.value) {
+                    CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                        val errorId = error.id.collectAsStateWithLifecycle().value
+                        SavedPatternsScreen(
+                            state = state(emptyList()).copy(deleteErrorId = errorId),
+                            actions = actions().copy(claimDeleteError = error::claim),
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.runOnIdle {
+            error.report()
+            shown.value = true
+        }
+        composeRule.onNodeWithText(message).assertDoesNotExist()
+        composeRule.runOnIdle { owner.lifecycle.currentState = Lifecycle.State.RESUMED }
+        composeRule.onNodeWithText(message).assertIsDisplayed()
+        composeRule.runOnIdle { shown.value = false }
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { shown.value = true }
+        composeRule.onNodeWithText(message).assertDoesNotExist()
+    }
 
     // BadgePill näyttää lähteen versaalina.
     private val webLabel
@@ -190,6 +232,7 @@ class SavedPatternsWebScreenTest {
             onToggleSelection = {},
             onSelectAll = {},
             onDeleteSelected = {},
+            claimDeleteError = { false },
             onExitSelectMode = {},
             onBack = {},
         )

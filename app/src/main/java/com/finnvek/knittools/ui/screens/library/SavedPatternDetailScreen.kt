@@ -24,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,6 +74,7 @@ fun SavedPatternDetailScreen(
     onOpenPattern: () -> Unit,
     onAttachToProject: (projectId: Long, onResult: (attached: Boolean) -> Unit) -> Unit,
     onRemove: () -> Unit,
+    claimDeleteError: (Long) -> Boolean,
     modifier: Modifier = Modifier,
     onOpenWebsite: ((String) -> ExternalWebLinkOpenResult)? = null,
     onOpenRavelry: (String) -> Unit = {},
@@ -92,7 +92,6 @@ fun SavedPatternDetailScreen(
     var showProjectPicker by rememberSaveable(pattern.id) { mutableStateOf(false) }
     val attachmentViewModel: SavedPatternAttachmentViewModel = viewModel(key = "web-attachment-${pattern.id}")
     val attachmentState by attachmentViewModel.state.collectAsStateWithLifecycle()
-    var lastHandledDeleteErrorId by remember(pattern.id) { mutableLongStateOf(deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -145,12 +144,7 @@ fun SavedPatternDetailScreen(
         }
     }
 
-    LaunchedEffect(deleteErrorId) {
-        if (deleteErrorId > lastHandledDeleteErrorId) {
-            lastHandledDeleteErrorId = deleteErrorId
-            snackbarHostState.showSnackbar(deleteFailedMessage)
-        }
-    }
+    PatternDeleteErrorEffect(deleteErrorId, claimDeleteError, snackbarHostState, deleteFailedMessage)
 
     if (showRemoveConfirmDialog) {
         ConfirmationDialog(

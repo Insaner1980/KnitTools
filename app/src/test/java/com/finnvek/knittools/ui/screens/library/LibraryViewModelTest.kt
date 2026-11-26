@@ -121,21 +121,21 @@ class LibraryViewModelTest {
             original.deleteSelectedYarn()
             assertTrue(original.createManualYarnCard(input))
             runCurrent()
-            assertTrue(original.yarnDeleteError.claim(original.yarnDeleteError.id.value))
+            assertTrue(original.yarnDeleteError.showImmediately(original.yarnDeleteError.id.value))
             assertTrue(original.retryCreateManualYarnCard())
             runCurrent()
             assertEquals(1L, original.yarnSaveSuccessId.value)
 
             val restored = createViewModel(SavedStateHandle(handle.keys().associateWith { handle.get<Long>(it) }))
-            assertTrue(restored.photoDeleteError.claim(restored.photoDeleteError.id.value))
-            assertFalse(restored.photoDeleteError.claim(restored.photoDeleteError.id.value))
-            assertTrue(restored.yarnSaveError.claim(restored.yarnSaveError.id.value))
-            assertFalse(restored.yarnDeleteError.claim(restored.yarnDeleteError.id.value))
+            assertTrue(restored.photoDeleteError.showImmediately(restored.photoDeleteError.id.value))
+            assertFalse(restored.photoDeleteError.showImmediately(restored.photoDeleteError.id.value))
+            assertTrue(restored.yarnSaveError.showImmediately(restored.yarnSaveError.id.value))
+            assertFalse(restored.yarnDeleteError.showImmediately(restored.yarnDeleteError.id.value))
             assertEquals(1L, restored.yarnSaveSuccessId.value)
             restored.deletePhoto(photo)
             assertTrue(restored.createManualYarnCard(input))
             runCurrent()
-            assertTrue(restored.photoDeleteError.claim(restored.photoDeleteError.id.value))
+            assertTrue(restored.photoDeleteError.showImmediately(restored.photoDeleteError.id.value))
             assertEquals(2L, restored.yarnSaveSuccessId.value)
         }
 
@@ -262,10 +262,10 @@ class LibraryViewModelTest {
             assertEquals(1L, viewModel.patternDeleteErrorId.value)
             val restoredHandle = SavedStateHandle(handle.keys().associateWith { handle.get<Long>(it) })
             val restored = createViewModel(restoredHandle)
-            assertTrue(restored.patternDeleteError.claim(restored.patternDeleteErrorId.value))
+            assertTrue(restored.patternDeleteError.showImmediately(restored.patternDeleteErrorId.value))
             val reopenedHandle = SavedStateHandle(restoredHandle.keys().associateWith { restoredHandle.get<Long>(it) })
             val reopened = createViewModel(reopenedHandle)
-            assertFalse(reopened.patternDeleteError.claim(reopened.patternDeleteErrorId.value))
+            assertFalse(reopened.patternDeleteError.showImmediately(reopened.patternDeleteErrorId.value))
         }
 
     @Test

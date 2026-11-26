@@ -34,6 +34,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
@@ -48,16 +50,22 @@ internal class LibraryErrorState(
 ) {
     private val currentId = savedStateHandle.getMutableStateFlow(key, 0L)
     private val handledKey = "$key.handled"
+    private val deliveryMutex = Mutex()
     val id = currentId.asStateFlow()
 
     fun report() {
         currentId.value += 1
     }
 
-    fun claim(id: Long): Boolean {
-        if (id <= (savedStateHandle.get<Long>(handledKey) ?: 0L)) return false
-        savedStateHandle[handledKey] = id
-        return true
+    suspend fun deliver(
+        id: Long,
+        show: suspend (onShown: () -> Unit) -> Unit,
+    ) {
+        deliveryMutex.withLock {
+            if (id > (savedStateHandle.get<Long>(handledKey) ?: 0L)) {
+                show { savedStateHandle[handledKey] = id }
+            }
+        }
     }
 }
 

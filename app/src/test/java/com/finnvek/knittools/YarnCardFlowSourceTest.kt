@@ -18,10 +18,9 @@ class YarnCardFlowSourceTest {
 
         assertTrue(navGraph.contains("val yarnDeleteErrorId by libraryViewModel.yarnDeleteError.id"))
         assertTrue(navGraph.contains("deleteErrorId = yarnDeleteErrorId"))
-        assertTrue(screen.contains("LaunchedEffect(state.deleteErrorId)"))
-        assertTrue(navGraph.contains("claimDeleteError = libraryViewModel.yarnDeleteError::claim"))
-        assertTrue(screen.contains("actions.claimDeleteError(state.deleteErrorId)"))
-        assertTrue(screen.contains("SnackbarHost(hostState = snackbarHostState)"))
+        assertTrue(navGraph.contains("deliverDeleteError = libraryViewModel.yarnDeleteError::deliver"))
+        assertTrue(screen.contains("LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError,"))
+        assertTrue(screen.contains("LibrarySnackbarHost(hostState = snackbarHostState)"))
     }
 
     private companion object {

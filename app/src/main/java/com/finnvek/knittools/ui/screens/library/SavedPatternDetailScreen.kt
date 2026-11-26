@@ -17,7 +17,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -74,7 +73,7 @@ fun SavedPatternDetailScreen(
     onOpenPattern: () -> Unit,
     onAttachToProject: (projectId: Long, onResult: (attached: Boolean) -> Unit) -> Unit,
     onRemove: () -> Unit,
-    claimDeleteError: (Long) -> Boolean,
+    deliverDeleteError: LibraryErrorDelivery,
     modifier: Modifier = Modifier,
     onOpenWebsite: ((String) -> ExternalWebLinkOpenResult)? = null,
     onOpenRavelry: (String) -> Unit = {},
@@ -144,7 +143,7 @@ fun SavedPatternDetailScreen(
         }
     }
 
-    PatternDeleteErrorEffect(deleteErrorId, claimDeleteError, snackbarHostState, deleteFailedMessage)
+    LibraryErrorSnackbarEffect(deleteErrorId, deliverDeleteError, snackbarHostState, deleteFailedMessage)
 
     if (showRemoveConfirmDialog) {
         ConfirmationDialog(
@@ -235,7 +234,7 @@ fun SavedPatternDetailScreen(
         title = pattern.name,
         onBack = onBack,
         modifier = modifier,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { LibrarySnackbarHost(hostState = snackbarHostState) },
         showTitle = scrollTitle.showTitle,
         actions = {
             SavedPatternDetailMenu(

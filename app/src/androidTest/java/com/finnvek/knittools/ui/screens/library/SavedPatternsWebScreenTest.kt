@@ -1,6 +1,9 @@
 package com.finnvek.knittools.ui.screens.library
 
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
@@ -41,6 +44,36 @@ class SavedPatternsWebScreenTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
+    fun queuedDeleteErrorSurvivesLeavingTheScreenBeforeItIsDisplayed() {
+        val host = SnackbarHostState()
+        val handle = SavedStateHandle()
+        val error = LibraryErrorState(handle, "delete")
+        val showScreen = mutableStateOf(true)
+        composeRule.setContent {
+            KnitToolsTheme {
+                LaunchedEffect(host) { host.showSnackbar("First", duration = SnackbarDuration.Indefinite) }
+                if (showScreen.value) {
+                    val id = error.id.collectAsStateWithLifecycle().value
+                    LibraryErrorSnackbarEffect(id, error::deliver, host, "Delete failed")
+                }
+                LibrarySnackbarHost(host)
+            }
+        }
+        composeRule.onNodeWithText("First").assertIsDisplayed()
+        composeRule.runOnIdle { error.report() }
+        composeRule.onNodeWithText("Delete failed").assertDoesNotExist()
+        composeRule.runOnIdle { showScreen.value = false }
+        composeRule.waitForIdle()
+        composeRule.runOnIdle {
+            assertEquals(0L, handle.get<Long>("delete.handled") ?: 0L)
+            host.currentSnackbarData?.dismiss()
+            showScreen.value = true
+        }
+        composeRule.onNodeWithText("Delete failed").assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(1L, handle.get<Long>("delete.handled")) }
+    }
+
+    @Test
     fun aDeleteErrorWhileTheListIsAbsentIsShownOnceOnReturn() {
         val shown = mutableStateOf(false)
         val error = LibraryErrorState(SavedStateHandle(), "patternDeleteErrorId")
@@ -57,7 +90,7 @@ class SavedPatternsWebScreenTest {
                         val errorId = error.id.collectAsStateWithLifecycle().value
                         SavedPatternsScreen(
                             state = state(emptyList()).copy(deleteErrorId = errorId),
-                            actions = actions().copy(claimDeleteError = error::claim),
+                            actions = actions().copy(deliverDeleteError = error::deliver),
                         )
                     }
                 }
@@ -232,7 +265,7 @@ class SavedPatternsWebScreenTest {
             onToggleSelection = {},
             onSelectAll = {},
             onDeleteSelected = {},
-            claimDeleteError = { false },
+            deliverDeleteError = { _, _ -> },
             onExitSelectMode = {},
             onBack = {},
         )

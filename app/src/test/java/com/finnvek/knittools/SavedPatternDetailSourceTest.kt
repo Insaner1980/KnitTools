@@ -50,7 +50,7 @@ class SavedPatternDetailSourceTest {
         val resultEffect =
             detail
                 .substringAfter("LaunchedEffect(attachmentState.result)")
-                .substringBefore("PatternDeleteErrorEffect(")
+                .substringBefore("LibraryErrorSnackbarEffect(")
         assertTrue(
             Regex("""attachmentViewModel\.consumeResult\(\)\s*handleWebAttachResult\(result\)""")
                 .containsMatchIn(resultEffect),
@@ -101,7 +101,7 @@ class SavedPatternDetailSourceTest {
                 .substringBefore("private fun NavGraphBuilder.libraryPatternViewerRoute")
         assertTrue(detailRoute.contains("libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()"))
         assertTrue(detailRoute.contains("deleteErrorId = patternDeleteErrorId"))
-        assertTrue(detailRoute.contains("claimDeleteError = libraryViewModel.patternDeleteError::claim"))
+        assertTrue(detailRoute.contains("deliverDeleteError = libraryViewModel.patternDeleteError::deliver"))
         listOf(
             detailRoute.substringAfter("onAttachToProject =").substringBefore("onAttachWebPattern ="),
             detailRoute.substringAfter("onRemove =").substringBefore("onOpenRavelry ="),
@@ -167,8 +167,8 @@ class SavedPatternDetailSourceTest {
         )
         assertTrue(detail.contains("deleteErrorId: Long = 0L"))
         assertTrue(detail.contains("SnackbarHostState()"))
-        assertTrue(detail.contains("PatternDeleteErrorEffect(deleteErrorId, claimDeleteError,"))
-        assertTrue(detail.contains("SnackbarHost(hostState = snackbarHostState)"))
+        assertTrue(detail.contains("LibraryErrorSnackbarEffect(deleteErrorId, deliverDeleteError,"))
+        assertTrue(detail.contains("LibrarySnackbarHost(hostState = snackbarHostState)"))
 
         DETAIL_STRINGS.forEach { stringName ->
             assertTrue(strings.contains("name=\"$stringName\""))

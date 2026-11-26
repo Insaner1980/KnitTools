@@ -66,7 +66,7 @@ class SavedPatternDetailWebScreenTest {
                                 },
                                 onOpenProject = { attached += 1 },
                                 onRemove = {},
-                                claimDeleteError = { false },
+                                deliverDeleteError = { _, _ -> },
                             )
                         }
                     }
@@ -144,7 +144,7 @@ class SavedPatternDetailWebScreenTest {
                     },
                     onOpenProject = { attached += 1 },
                     onRemove = {},
-                    claimDeleteError = { false },
+                    deliverDeleteError = { _, _ -> },
                 )
             }
         }
@@ -237,7 +237,7 @@ class SavedPatternDetailWebScreenTest {
                     },
                     onOpenProject = { attached += 1 },
                     onRemove = { removed += 1 },
-                    claimDeleteError = { false },
+                    deliverDeleteError = { _, _ -> },
                 )
             }
         }
@@ -301,7 +301,7 @@ class SavedPatternDetailWebScreenTest {
                         )
                     },
                     onRemove = {},
-                    claimDeleteError = { false },
+                    deliverDeleteError = { _, _ -> },
                 )
             }
         }

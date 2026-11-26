@@ -47,13 +47,13 @@ class LifecycleFlowCollectionSourceTest {
         private val DELETE_ERROR_CONSUMERS =
             mapOf(
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt" to
-                    "actions.claimDeleteError(state.deleteErrorId)",
+                    "LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError,",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt" to
-                    "actions.claimDeleteError(state.deleteErrorId)",
+                    "LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError,",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt" to
-                    "PatternDeleteErrorEffect(deleteErrorId, claimDeleteError,",
+                    "LibraryErrorSnackbarEffect(deleteErrorId, deliverDeleteError,",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt" to
-                    "PatternDeleteErrorEffect(state.deleteErrorId, actions.claimDeleteError,",
+                    "LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError,",
             )
     }
 }

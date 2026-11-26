@@ -29,12 +29,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,9 +49,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
@@ -90,7 +85,7 @@ data class SavedPatternsActions(
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
     val onBack: () -> Unit,
-    val claimDeleteError: (Long) -> Boolean,
+    val deliverDeleteError: LibraryErrorDelivery,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,7 +103,7 @@ fun SavedPatternsScreen(
         actions.onExitSelectMode()
     }
 
-    PatternDeleteErrorEffect(state.deleteErrorId, actions.claimDeleteError, snackbarHostState, deleteFailedMessage)
+    LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError, snackbarHostState, deleteFailedMessage)
 
     if (showDeleteConfirmDialog) {
         SavedPatternsDeleteDialog(
@@ -134,7 +129,7 @@ fun SavedPatternsScreen(
                 onBack = actions.onBack,
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { LibrarySnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             if (!state.isSelectMode && state.patterns.isNotEmpty()) {
                 // Sama pilleri kuin New Project ja Add Yarn: teksti + kolmiulotteinen plus.
@@ -177,21 +172,6 @@ fun SavedPatternsScreen(
                 padding = padding,
                 bottomContentPadding = actionHeight + 32.dp,
             )
-        }
-    }
-}
-
-@Composable
-internal fun PatternDeleteErrorEffect(
-    errorId: Long,
-    claimDeleteError: (Long) -> Boolean,
-    snackbarHostState: SnackbarHostState,
-    message: String,
-) {
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(lifecycle, errorId) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            if (claimDeleteError(errorId)) snackbarHostState.showSnackbar(message)
         }
     }
 }

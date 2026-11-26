@@ -241,8 +241,8 @@ class YarnCorrectionRuntimeTest {
                                 {},
                                 {},
                                 {},
-                                claimDeleteError = library.yarnDeleteError::claim,
-                                claimSaveError = library.yarnSaveError::claim,
+                                deliverDeleteError = library.yarnDeleteError::deliver,
+                                deliverSaveError = library.yarnSaveError::deliver,
                             ),
                         )
                     }

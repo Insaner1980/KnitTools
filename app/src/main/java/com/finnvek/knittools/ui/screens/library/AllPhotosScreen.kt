@@ -21,7 +21,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -75,7 +74,7 @@ data class AllPhotosActions(
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
     val onBack: () -> Unit,
-    val claimDeleteError: (Long) -> Boolean,
+    val deliverDeleteError: LibraryErrorDelivery,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,11 +112,7 @@ fun AllPhotosScreen(
         actions.onExitSelectMode()
     }
 
-    LaunchedEffect(state.deleteErrorId) {
-        if (actions.claimDeleteError(state.deleteErrorId)) {
-            snackbarHostState.showSnackbar(deleteFailedMessage)
-        }
-    }
+    LibraryErrorSnackbarEffect(state.deleteErrorId, actions.deliverDeleteError, snackbarHostState, deleteFailedMessage)
 
     // PhotoViewer (vain normaalimoodissa)
     if (!state.isSelectMode) {
@@ -160,7 +155,7 @@ fun AllPhotosScreen(
                 onBack = actions.onBack,
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { LibrarySnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             SelectModeDeleteBar(
                 visible = state.isSelectMode && state.selectedPhotoIds.isNotEmpty(),

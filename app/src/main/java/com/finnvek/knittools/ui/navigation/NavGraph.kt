@@ -872,7 +872,7 @@ private fun NavGraphBuilder.librarySavedPatternsRoute(navController: NavHostCont
                     onToggleSelection = libraryViewModel::togglePatternSelection,
                     onSelectAll = libraryViewModel::selectAllPatterns,
                     onDeleteSelected = libraryViewModel::deleteSelectedPatterns,
-                    claimDeleteError = libraryViewModel.patternDeleteError::claim,
+                    deliverDeleteError = libraryViewModel.patternDeleteError::deliver,
                     onExitSelectMode = libraryViewModel::exitPatternSelectMode,
                     onBack = { navController.popBackStack() },
                 ),
@@ -979,7 +979,7 @@ private fun SavedPatternDetailContent(
             navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(url))
         },
         deleteErrorId = patternDeleteErrorId,
-        claimDeleteError = libraryViewModel.patternDeleteError::claim,
+        deliverDeleteError = libraryViewModel.patternDeleteError::deliver,
     )
 }
 
@@ -1089,8 +1089,8 @@ private fun myYarnActions(
     },
     onCreateYarnCard = libraryViewModel::createManualYarnCard,
     onRetryCreateYarnCard = libraryViewModel::retryCreateManualYarnCard,
-    claimDeleteError = libraryViewModel.yarnDeleteError::claim,
-    claimSaveError = libraryViewModel.yarnSaveError::claim,
+    deliverDeleteError = libraryViewModel.yarnDeleteError::deliver,
+    deliverSaveError = libraryViewModel.yarnSaveError::deliver,
     onEnterSelectMode = libraryViewModel::enterYarnSelectMode,
     onToggleSelection = libraryViewModel::toggleYarnSelection,
     onSelectAll = libraryViewModel::selectAllYarn,
@@ -1221,7 +1221,7 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
                 actions =
                     AllPhotosActions(
                         onDeletePhoto = libraryViewModel::deletePhoto,
-                        claimDeleteError = libraryViewModel.photoDeleteError::claim,
+                        deliverDeleteError = libraryViewModel.photoDeleteError::deliver,
                         onEnterSelectMode = libraryViewModel::enterPhotoSelectMode,
                         onToggleSelection = libraryViewModel::togglePhotoSelection,
                         onSelectAll = libraryViewModel::selectAllPhotos,

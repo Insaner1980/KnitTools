@@ -472,8 +472,8 @@ class PatternDocumentStorage
                 }
 
                 ContentResolver.SCHEME_FILE -> {
-                    val sourceFile = sourceUri.path?.let(::File) ?: throw IOException("Pattern PDF source is unavailable")
-                    sourceFile.inputStream().use { input ->
+                    val sourcePath = sourceUri.path ?: throw IOException("Pattern PDF source is unavailable")
+                    File(sourcePath).inputStream().use { input ->
                         PatternDocumentFiles.copyBounded(input, targetFile, maxCopyBytes) { copyContext.ensureActive() }
                     }
                 }

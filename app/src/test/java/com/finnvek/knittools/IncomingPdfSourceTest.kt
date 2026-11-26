@@ -56,9 +56,24 @@ class IncomingPdfSourceTest {
         assertTrue(incomingPdfCreation.contains("this[DEFAULT_ARGS_KEY] = Bundle()"))
     }
 
+    @Test
+    fun `incoming provider receipt has one bounded deadline aware transfer`() {
+        val viewModel = ProjectSourceFiles.read(VIEW_MODEL)
+        val storage = ProjectSourceFiles.read(PATTERN_DOCUMENT_STORAGE)
+
+        assertTrue(viewModel.contains("incomingReceiveActive.compareAndSet(false, true)"))
+        assertFalse(viewModel.contains("displayNameOrNull(uri)"))
+        assertTrue(storage.contains("PATTERN_PDF_IMPORT_MAX_BYTES = 100L * 1024L * 1024L"))
+        assertTrue(storage.contains("coerceAtMost(PATTERN_PDF_IMPORT_MAX_BYTES)"))
+        assertTrue(storage.contains("ContentResolverBackupProviderIo(context)"))
+        assertTrue(storage.contains("pdfProviderIo(context).read("))
+    }
+
     private companion object {
         const val VIEW_MODEL = "app/src/main/java/com/finnvek/knittools/ui/navigation/IncomingPdfViewModel.kt"
         const val COUNTER_REPOSITORY = "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt"
+        const val PATTERN_DOCUMENT_STORAGE =
+            "app/src/main/java/com/finnvek/knittools/data/storage/PatternDocumentStorage.kt"
         const val SHEET = "app/src/main/java/com/finnvek/knittools/ui/screens/library/IncomingPdfSheet.kt"
     }
 }

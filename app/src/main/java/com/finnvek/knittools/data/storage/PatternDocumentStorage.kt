@@ -1,11 +1,14 @@
 package com.finnvek.knittools.data.storage
 
+import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.storage.StorageManager
 import androidx.core.net.toUri
+import com.finnvek.knittools.data.backup.BackupProviderIo
+import com.finnvek.knittools.data.backup.ContentResolverBackupProviderIo
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.ui.screens.pattern.PatternImageImportLimits
 import com.finnvek.knittools.ui.screens.pattern.PatternImageSelection
@@ -28,6 +31,7 @@ import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 
 private const val PATTERN_CAPTURE_ROOT = "pattern_captures"
+internal const val PATTERN_PDF_IMPORT_MAX_BYTES = 100L * 1024L * 1024L
 
 internal enum class PatternImageFailureReason {
     UNSUPPORTED,
@@ -71,6 +75,9 @@ class PatternDocumentStorage
     constructor(
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
+        private val pdfProviderIoLock = Any()
+        private var pdfProviderIo: BackupProviderIo? = null
+
         fun createCaptureImageFile(
             context: Context,
             projectId: Long,
@@ -423,22 +430,36 @@ class PatternDocumentStorage
 
                         try {
                             val copiedFile =
-                                PatternDocumentFiles.writeUniquePdf(
+                                PatternDocumentFiles.writeUniquePdfSuspending(
                                     directory = File(context.filesDir, "pattern_pdfs/$projectId"),
                                     // A discarded share must not make its URI available to a later request.
                                     fileName = if (projectId == 0L) "${UUID.randomUUID()}.pdf" else fileName,
                                 ) { targetFile ->
-                                    val input =
-                                        context.contentResolver.openInputStream(sourceUri)
-                                            ?: throw IOException("Pattern PDF source is unavailable")
-                                    input.use {
-                                        PatternDocumentFiles.copyBounded(
-                                            input = it,
-                                            target = targetFile,
-                                            maxBytes = maxCopyBytes,
-                                        ) {
-                                            copyContext.ensureActive()
+                                    when (sourceUri.scheme) {
+                                        ContentResolver.SCHEME_CONTENT -> {
+                                            pdfProviderIo(context).read(
+                                                source = sourceUri,
+                                                target = targetFile,
+                                                maxBytes = maxCopyBytes,
+                                                check = { copyContext.ensureActive() },
+                                            )
                                         }
+
+                                        ContentResolver.SCHEME_FILE -> {
+                                            val sourceFile =
+                                                sourceUri.path?.let(::File)
+                                                    ?: throw IOException("Pattern PDF source is unavailable")
+                                            sourceFile.inputStream().use { input ->
+                                                PatternDocumentFiles.copyBounded(
+                                                    input = input,
+                                                    target = targetFile,
+                                                    maxBytes = maxCopyBytes,
+                                                    onChunk = { copyContext.ensureActive() },
+                                                )
+                                            }
+                                        }
+
+                                        else -> throw IOException("Pattern PDF source is unavailable")
                                     }
                                     copyContext.ensureActive()
                                     requireReadablePdf(context, targetFile)
@@ -463,6 +484,11 @@ class PatternDocumentStorage
             }
         }
 
+        private fun pdfProviderIo(context: Context): BackupProviderIo =
+            synchronized(pdfProviderIoLock) {
+                pdfProviderIo ?: ContentResolverBackupProviderIo(context).also { pdfProviderIo = it }
+            }
+
         private fun requireReadablePdf(
             context: Context,
             file: File,
@@ -477,7 +503,7 @@ class PatternDocumentStorage
                 (
                     storageManager.getAllocatableBytes(storageUuid) -
                         PatternImageImportLimits.MIN_FREE_SPACE_RESERVE_BYTES
-                ).takeIf { it > 0L }
+                ).coerceAtMost(PATTERN_PDF_IMPORT_MAX_BYTES).takeIf { it > 0L }
             } catch (_: IOException) {
                 null
             }
@@ -585,6 +611,33 @@ internal object PatternDocumentFiles {
     ): File? =
         try {
             writeUniquePdfOrThrow(directory, fileName, write)
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Exception) {
+            null
+        }
+
+    suspend fun writeUniquePdfSuspending(
+        directory: File,
+        fileName: String,
+        write: suspend (File) -> Unit,
+    ): File? =
+        try {
+            if (!directory.isDirectory && !directory.mkdirs() && !directory.isDirectory) {
+                throw IOException("Pattern PDF directory creation failed")
+            }
+            prepareUnassignedDirectory(directory)
+            val safeFileName = safePdfFileName(fileName)
+            val tempFile = createTempFile(directory, safeFileName)
+            try {
+                write(tempFile)
+                moveToUniquePdf(tempFile, directory, safeFileName)
+                    ?: throw IOException("Pattern PDF publish failed")
+            } finally {
+                if (tempFile.exists() && !tempFile.delete()) {
+                    tempFile.deleteOnExit()
+                }
+            }
         } catch (failure: CancellationException) {
             throw failure
         } catch (_: Exception) {

@@ -15,7 +15,6 @@ import com.finnvek.knittools.data.remote.WebPdfDownload
 import com.finnvek.knittools.data.remote.WebPdfDownloader
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
-import com.finnvek.knittools.data.storage.displayNameOrNull
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.CounterProject
@@ -49,6 +48,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 data class IncomingPdfChoices(
@@ -106,6 +106,7 @@ class IncomingPdfViewModel
     ) : ViewModel() {
         internal var pdfIntentConsumed = false
         private val pendingMutex = Mutex()
+        private val incomingReceiveActive = AtomicBoolean()
         private var incomingRequestVersion = 0L
         private val mutablePending = MutableStateFlow(restorePending())
         val pending: StateFlow<IncomingPdf?> = mutablePending.asStateFlow()
@@ -154,6 +155,7 @@ class IncomingPdfViewModel
         }
 
         fun receive(uri: Uri) {
+            if (!incomingReceiveActive.compareAndSet(false, true)) return
             analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_SHARED)
             val requestVersion = ++incomingRequestVersion
             savedStateHandle[KEY_SOURCE_URI] = uri
@@ -161,12 +163,15 @@ class IncomingPdfViewModel
             viewModelScope.launch {
                 try {
                     val fileName =
-                        withContext(ioDispatcher) { context.contentResolver.displayNameOrNull(uri) }
-                            ?: uri.lastPathSegment?.takeIf(String::isNotBlank)
+                        uri.lastPathSegment?.takeIf(String::isNotBlank)
                             ?: context.getString(R.string.pattern_pdf_fallback_name)
                     receiveCopy(uri, fileName, requestVersion)
                 } finally {
-                    if (requestVersion == incomingRequestVersion) finishReceiving()
+                    try {
+                        if (requestVersion == incomingRequestVersion) finishReceiving()
+                    } finally {
+                        incomingReceiveActive.set(false)
+                    }
                 }
             }
         }

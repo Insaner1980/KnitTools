@@ -87,8 +87,10 @@ class IncomingPdfViewModelTest : IncomingPdfTestFixture() {
                 coVerify(exactly = 0) { storage.copyPdfToInternal(any(), any(), any(), any()) }
 
                 assertTrue(model.receiveFromIntent(pdfIntent(Intent.ACTION_VIEW, "application/pdf", source), resolver))
+                runCurrent()
                 every { resolver.getType(source) } returns "application/pdf"
                 assertTrue(model.receiveFromIntent(unresolvedView, resolver, isNewIntent = true))
+                runCurrent()
                 assertTrue(model.receiveFromIntent(send, resolver, isNewIntent = true))
                 runCurrent()
 
@@ -222,7 +224,7 @@ class IncomingPdfViewModelTest : IncomingPdfTestFixture() {
         }
 
     @Test
-    fun `late older import cannot replace the newer pending pdf`() =
+    fun `a second shared PDF is rejected until the active receipt finishes`() =
         runTest {
             val older = mockk<Uri> { every { lastPathSegment } returns "Older.pdf" }
             val newer = mockk<Uri> { every { lastPathSegment } returns "Newer.pdf" }
@@ -237,23 +239,26 @@ class IncomingPdfViewModelTest : IncomingPdfTestFixture() {
             runCurrent()
             model.receive(newer)
             runCurrent()
-            assertEquals(newerUri, model.pending.value?.localUri)
+            assertEquals(stagedUri, model.pending.value?.localUri)
+            coVerify(exactly = 0) { storage.copyPdfToInternal(context, 0L, newer, "Newer.pdf") }
 
             olderCopy.complete(olderUri)
             advanceUntilIdle()
 
-            assertEquals(newerUri, model.pending.value?.localUri)
-            coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(olderUri) }
+            assertEquals(olderUri, model.pending.value?.localUri)
+            coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(olderUri) }
             coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(newerUri) }
             coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
         }
 
     @Test
-    fun `late older import failure does not show an error over the newer pending pdf`() =
+    fun `a rejected overlapping receipt can start after the active receipt fails`() =
         runTest {
             val older = mockk<Uri> { every { lastPathSegment } returns "Older.pdf" }
+            val newer = mockk<Uri> { every { lastPathSegment } returns "Newer.pdf" }
             val olderCopy = CompletableDeferred<String?>()
             coEvery { storage.copyPdfToInternal(context, 0L, older, "Older.pdf") } coAnswers { olderCopy.await() }
+            coEvery { storage.copyPdfToInternal(context, 0L, newer, "Newer.pdf") } returns NEW_PDF_URI
             val model = viewModel(SavedStateHandle())
             val outcomes = mutableListOf<IncomingPdfOutcome>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -262,16 +267,19 @@ class IncomingPdfViewModelTest : IncomingPdfTestFixture() {
 
             model.receive(older)
             runCurrent()
-            receiveNewPdf(model)
+            model.receive(newer)
             runCurrent()
-            assertEquals(NEW_PDF_URI, model.pending.value?.localUri)
+            coVerify(exactly = 0) { storage.copyPdfToInternal(context, 0L, newer, "Newer.pdf") }
 
             olderCopy.complete(null)
             runCurrent()
+            model.receive(newer)
+            advanceUntilIdle()
 
-            assertTrue(outcomes.isEmpty())
+            assertEquals(listOf(IncomingPdfOutcome.OpenFailed), outcomes)
             assertEquals(NEW_PDF_URI, model.pending.value?.localUri)
             assertFalse(model.receiving.value)
+            coVerify(exactly = 1) { storage.copyPdfToInternal(context, 0L, newer, "Newer.pdf") }
         }
 
     @Test

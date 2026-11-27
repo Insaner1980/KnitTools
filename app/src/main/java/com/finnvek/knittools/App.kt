@@ -1,13 +1,18 @@
 package com.finnvek.knittools
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ProcessLifecycleOwner
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import com.finnvek.knittools.analytics.PostHogAnalytics
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
+import com.finnvek.knittools.data.remote.PatternThumbnailNetwork
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
@@ -20,6 +25,8 @@ import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
 import dagger.hilt.android.HiltAndroidApp
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
@@ -33,7 +40,16 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltAndroidApp
-class App : Application() {
+class App :
+    Application(),
+    SingletonImageLoader.Factory {
+    override fun newImageLoader(context: Context): ImageLoader =
+        ImageLoader
+            .Builder(context)
+            .components {
+                add(KtorNetworkFetcherFactory(httpClient = { HttpClient(OkHttp) { install(PatternThumbnailNetwork) } }))
+            }.build()
+
     @Inject
     lateinit var analytics: PostHogAnalytics
 

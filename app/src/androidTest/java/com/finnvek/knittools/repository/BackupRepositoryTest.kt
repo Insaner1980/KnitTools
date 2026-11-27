@@ -1131,6 +1131,9 @@ class BackupRepositoryTest {
                 ),
             )
             sql.execSQL(
+                "UPDATE saved_patterns SET thumbnailUrl = 'https://images4-f.ravelrycache.com/preview' WHERE id <> 1",
+            )
+            sql.execSQL(
                 "UPDATE pattern_annotation_layers SET createdAt = ?, updatedAt = ?",
                 arrayOf(Long.MIN_VALUE, Long.MAX_VALUE),
             )
@@ -1211,6 +1214,7 @@ class BackupRepositoryTest {
                 assertEquals(table, before.getValue(table).size, after.getValue(table).size)
                 before.getValue(table).zip(after.getValue(table)).forEach { (old, actual) ->
                     val expected = old.toMutableMap()
+                    if (table == "saved_patterns" && old["id"] == 1L) expected["thumbnailUrl"] = null
                     if ("id" in old) expected["id"] = ids.getValue(table).getValue(old.getValue("id") as Long)
                     if (old["projectId"] != null) expected["projectId"] = projectId
                     listOf("savedYarnCardId", "yarnCardId").filter { old[it] != null }.forEach { expected[it] = cardId }

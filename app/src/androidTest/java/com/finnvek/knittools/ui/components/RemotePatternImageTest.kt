@@ -30,6 +30,7 @@ import coil3.request.CachePolicy
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
+import com.finnvek.knittools.data.remote.PatternThumbnailNetwork
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -115,7 +116,7 @@ class RemotePatternImageTest {
         val engine =
             MockEngine { request ->
                 assertEquals(URLProtocol.HTTPS, request.url.protocol)
-                assertEquals("images.example.test", request.url.host)
+                assertEquals("images4-f.ravelrycache.com", request.url.host)
                 requestStarted.set(true)
                 responseGate.await()
                 respond(
@@ -157,6 +158,29 @@ class RemotePatternImageTest {
             assertEquals(1, engine.requestHistory.size)
             assertEquals(beforeStorage, userContentStorageSnapshot())
         }
+    }
+
+    @Test
+    fun redirectsCanReachAnotherImageShardButStopBeforeAnUntrustedDestination() {
+        val failed = AtomicBoolean(false)
+        val hosts = mutableListOf<String>()
+        val engine =
+            MockEngine { request ->
+                hosts.add(request.url.host)
+                val destination =
+                    when (request.url.host) {
+                        "images4-f.ravelrycache.com" -> "https://images4-g.ravelrycache.com/next"
+                        "images4-g.ravelrycache.com" -> "https://printer.local/preview"
+                        else -> error("Unexpected network destination")
+                    }
+                respond("", HttpStatusCode.Found, headersOf(HttpHeaders.Location, destination))
+            }
+        val loader = imageLoader(engine, onError = { failed.set(true) })
+        composeRule.setContent {
+            RemotePatternImage(SUCCESS_URL, Modifier.size(IMAGE_SIZE), imageLoaderProvider = { loader })
+        }
+        composeRule.waitUntil(timeoutMillis = REQUEST_TIMEOUT_MILLIS) { failed.get() }
+        assertEquals(listOf("images4-f.ravelrycache.com", "images4-g.ravelrycache.com"), hosts)
     }
 
     @Test
@@ -273,7 +297,7 @@ class RemotePatternImageTest {
         onSuccess: () -> Unit = {},
         onError: () -> Unit = {},
     ): ImageLoader {
-        val client = HttpClient(engine).also(httpClients::add)
+        val client = HttpClient(engine) { install(PatternThumbnailNetwork) }.also(httpClients::add)
         return ImageLoader
             .Builder(context)
             .components {
@@ -333,8 +357,8 @@ class RemotePatternImageTest {
         private const val PATTERN_TITLE = "Pattern title"
         private const val PATTERN_DESIGNER = "Test Designer"
         private const val PATTERN_AVAILABILITY = "Availability unknown"
-        private const val SUCCESS_URL = "https://images.example.test/pattern.png"
-        private const val FAILURE_URL = "https://images.example.test/missing.png"
+        private const val SUCCESS_URL = "https://images4-f.ravelrycache.com/pattern.png"
+        private const val FAILURE_URL = "https://images4-f.ravelrycache.com/missing.png"
         private const val REQUEST_TIMEOUT_MILLIS = 5_000L
         private val IMAGE_SIZE = 80.dp
         private val USER_CONTENT_DIRECTORIES =

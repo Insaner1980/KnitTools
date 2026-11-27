@@ -9,6 +9,7 @@ import com.finnvek.knittools.data.local.SavedPatternMigration30
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.ProjectFolderNameValidationResult
+import com.finnvek.knittools.domain.model.normalizeRemotePatternImageUrl
 import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
 import com.finnvek.knittools.domain.model.validateProjectFolderName
 import kotlinx.serialization.json.JsonArray
@@ -224,7 +225,7 @@ internal object BackupTables {
                 val row = inputColumns.zip(values).toMap().toMutableMap()
                 (columns - inputColumns.toSet()).forEach { row[it] = JsonNull }
                 validateFields(table, row, budget)
-                validateYarnCardIds(table, row)
+                prepareRestoredRow(table, row)
                 budget.observeRow(table, row)
                 consume(row)
             }
@@ -305,17 +306,27 @@ internal object BackupTables {
 
     private fun invalidValue(): Nothing = throw BackupException(BackupError.VALIDATION)
 
-    private fun validateYarnCardIds(
+    private fun prepareRestoredRow(
         table: String,
-        row: Map<String, JsonElement>,
+        row: MutableMap<String, JsonElement>,
     ) {
-        if (table != "counter_projects") return
-        val value = row["yarnCardIds"] as? JsonPrimitive ?: return
-        if (!value.isString) return
-        BackupFormat.requireValid(
-            parseYarnCardIdsWithinLimits(value.content) != null,
-            BackupError.VALIDATION,
-        )
+        when (table) {
+            "saved_patterns" -> {
+                val thumbnail = row["thumbnailUrl"] as? JsonPrimitive
+                if (thumbnail?.isString == true) {
+                    row["thumbnailUrl"] = JsonPrimitive(normalizeRemotePatternImageUrl(thumbnail.content))
+                }
+            }
+
+            "counter_projects" -> {
+                val value = row["yarnCardIds"] as? JsonPrimitive ?: return
+                if (!value.isString) return
+                BackupFormat.requireValid(
+                    parseYarnCardIdsWithinLimits(value.content) != null,
+                    BackupError.VALIDATION,
+                )
+            }
+        }
     }
 
     private fun validateInteger(
